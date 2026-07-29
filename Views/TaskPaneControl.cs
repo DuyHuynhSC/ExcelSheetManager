@@ -123,12 +123,28 @@ namespace ExcelSheetManager.Views
             _lblTitle = new Label
             {
                 Dock = DockStyle.Left,
-                AutoSize = true,
-                Text = "NAVIGATION",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(56, 189, 248),
-                TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(0, 4, 0, 0)
+                Width = 145,
+                BackColor = Color.Transparent
+            };
+
+            // Custom GDI+ Vector Chart Icon + Text Painting
+            _lblTitle.Paint += (s, pe) =>
+            {
+                pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
+
+                // Draw 3 Vector Bar Chart Bars (Cyan #38BDF8)
+                using (var brush = new SolidBrush(Color.FromArgb(56, 189, 248)))
+                {
+                    pe.Graphics.FillRectangle(brush, 6, 18, 4, 8);   // Bar 1
+                    pe.Graphics.FillRectangle(brush, 12, 14, 4, 12); // Bar 2
+                    pe.Graphics.FillRectangle(brush, 18, 10, 4, 16); // Bar 3
+                }
+
+                // Draw NAVIGATION Text
+                using (var font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
+                {
+                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(26, 6), Color.FromArgb(56, 189, 248));
+                }
             };
 
             _pnlHeader.Controls.Add(_btnRefresh);
