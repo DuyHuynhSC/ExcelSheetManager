@@ -22,6 +22,13 @@ namespace ExcelSheetManager.Views
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, bool wParam, int lParam);
         private const int WM_SETREDRAW = 0x000B;
 
+        [DllImport("user32.dll")]
+        private static extern bool SetForegroundWindow(IntPtr hWnd);
+
+        [DllImport("user32.dll")]
+        private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
+        private const int SW_RESTORE = 9;
+
         public string BoundWorkbookName { get; set; } = string.Empty;
 
         // UI Colors
@@ -513,7 +520,14 @@ namespace ExcelSheetManager.Views
                 wb.Activate();
                 if (wb.Windows != null && wb.Windows.Count > 0)
                 {
-                    try { ((Excel.Window)wb.Windows[1]).Activate(); } catch { }
+                    Excel.Window win = (Excel.Window)wb.Windows[1];
+                    win.Activate();
+                    IntPtr hwnd = new IntPtr(win.Hwnd);
+                    if (hwnd != IntPtr.Zero)
+                    {
+                        ShowWindowAsync(hwnd, SW_RESTORE);
+                        SetForegroundWindow(hwnd);
+                    }
                 }
                 _lblStatus.Text = $"Activated file: {item.Name}";
             }
@@ -527,23 +541,38 @@ namespace ExcelSheetManager.Views
         {
             try
             {
+                Excel.Workbook? parentWb = null;
                 if (item.SheetRef is Excel.Worksheet ws)
                 {
-                    var parentWb = (Excel.Workbook)ws.Parent;
+                    parentWb = (Excel.Workbook)ws.Parent;
                     parentWb.Activate();
                     if (parentWb.Windows != null && parentWb.Windows.Count > 0)
                     {
-                        try { ((Excel.Window)parentWb.Windows[1]).Activate(); } catch { }
+                        Excel.Window win = (Excel.Window)parentWb.Windows[1];
+                        win.Activate();
+                        IntPtr hwnd = new IntPtr(win.Hwnd);
+                        if (hwnd != IntPtr.Zero)
+                        {
+                            ShowWindowAsync(hwnd, SW_RESTORE);
+                            SetForegroundWindow(hwnd);
+                        }
                     }
                     ws.Activate();
                 }
                 else if (item.SheetRef is Excel.Chart chart)
                 {
-                    var parentWb = (Excel.Workbook)chart.Parent;
+                    parentWb = (Excel.Workbook)chart.Parent;
                     parentWb.Activate();
                     if (parentWb.Windows != null && parentWb.Windows.Count > 0)
                     {
-                        try { ((Excel.Window)parentWb.Windows[1]).Activate(); } catch { }
+                        Excel.Window win = (Excel.Window)parentWb.Windows[1];
+                        win.Activate();
+                        IntPtr hwnd = new IntPtr(win.Hwnd);
+                        if (hwnd != IntPtr.Zero)
+                        {
+                            ShowWindowAsync(hwnd, SW_RESTORE);
+                            SetForegroundWindow(hwnd);
+                        }
                     }
                     chart.Activate();
                 }
