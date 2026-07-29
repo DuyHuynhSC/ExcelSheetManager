@@ -58,7 +58,7 @@
    dotnet build -c Release
    ```
 3. Sau khi build thành công, các file `.xll` độc lập (packed self-contained add-in) sẽ được sinh ra tại:
-   `bin/Release/net8.0-windows/publish/`
+   `bin/Release/net48/publish/`
    - **`ExcelSheetManager-AddIn64-packed.xll`** (Dành cho Excel 64-bit)
    - **`ExcelSheetManager-AddIn-packed.xll`** (Dành cho Excel 32-bit)
 

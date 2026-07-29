@@ -176,8 +176,8 @@ namespace ExcelSheetManager.ViewModels
             else
             {
                 var filter = WorkbookFilterText.Trim();
-                var filtered = _allWorkbooks.Where(w => w.Name.Contains(filter, StringComparison.OrdinalIgnoreCase) ||
-                                                        w.FullPath.Contains(filter, StringComparison.OrdinalIgnoreCase));
+                var filtered = _allWorkbooks.Where(w => w.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                                        w.FullPath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
                 FilteredWorkbooks = new ObservableCollection<WorkbookItem>(filtered);
             }
         }
@@ -259,7 +259,7 @@ namespace ExcelSheetManager.ViewModels
             else
             {
                 var filter = SheetFilterText.Trim();
-                var filtered = _allSheets.Where(s => s.Name.Contains(filter, StringComparison.OrdinalIgnoreCase));
+                var filtered = _allSheets.Where(s => s.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
                 FilteredSheets = new ObservableCollection<SheetItem>(filtered);
             }
         }
