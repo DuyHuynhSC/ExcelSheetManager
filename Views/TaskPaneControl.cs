@@ -38,6 +38,10 @@ namespace ExcelSheetManager.Views
         private readonly Color _subTextColor = Color.FromArgb(148, 163, 184);// Slate 400 #94A3B8
 
         // Controls
+        private Panel _pnlHeader = null!;
+        private Label _lblTitle = null!;
+        private Button _btnRefresh = null!;
+
         private SplitContainer _splitContainer = null!;
 
         private Panel _pnlVung1Header = null!;
@@ -73,7 +77,43 @@ namespace ExcelSheetManager.Views
         {
             this.SuspendLayout();
 
-            // 1. STATUS LABEL (FOOTER)
+            // 1. HEADER TOOLBAR PANEL
+            _pnlHeader = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 42,
+                BackColor = _cardColor,
+                Padding = new Padding(8, 4, 8, 4)
+            };
+
+            _lblTitle = new Label
+            {
+                Text = "📊 Navigation",
+                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                ForeColor = _textColor,
+                AutoSize = true,
+                Location = new Point(10, 10)
+            };
+
+            _btnRefresh = new Button
+            {
+                Text = "🔄 Refresh",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(59, 130, 246),
+                FlatStyle = FlatStyle.Flat,
+                Size = new Size(80, 28),
+                Location = new Point(245, 7),
+                Anchor = AnchorStyles.Top | AnchorStyles.Right,
+                Cursor = Cursors.Hand
+            };
+            _btnRefresh.FlatAppearance.BorderSize = 0;
+            _btnRefresh.Click += (s, e) => RefreshData();
+
+            _pnlHeader.Controls.Add(_lblTitle);
+            _pnlHeader.Controls.Add(_btnRefresh);
+
+            // 2. STATUS LABEL (FOOTER)
             _lblStatus = new Label
             {
                 Dock = DockStyle.Bottom,
@@ -86,7 +126,7 @@ namespace ExcelSheetManager.Views
                 Text = "Ready"
             };
 
-            // 2. SPLIT CONTAINER (VÙNG 1 & VÙNG 2)
+            // 3. SPLIT CONTAINER (VÙNG 1 & VÙNG 2)
             _splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
@@ -193,8 +233,9 @@ namespace ExcelSheetManager.Views
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
             _splitContainer.Panel2.BackColor = _bgColor;
 
-            // ADD ALL TO CONTROL
+            // ADD ALL TO CONTROL (Header panel + SplitContainer + Footer Status)
             this.Controls.Add(_splitContainer);
+            this.Controls.Add(_pnlHeader);
             this.Controls.Add(_lblStatus);
 
             this.ResumeLayout(false);
@@ -213,7 +254,7 @@ namespace ExcelSheetManager.Views
             {
                 if (_splitContainer != null && this.Height > 160)
                 {
-                    int availableHeight = this.Height - (_lblStatus?.Height ?? 24);
+                    int availableHeight = this.Height - (_pnlHeader?.Height ?? 42) - (_lblStatus?.Height ?? 24);
                     int half = availableHeight / 2;
                     if (half >= _splitContainer.Panel1MinSize && half <= availableHeight - _splitContainer.Panel2MinSize)
                     {
