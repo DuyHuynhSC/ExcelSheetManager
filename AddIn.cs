@@ -112,11 +112,11 @@ namespace ExcelSheetManager
                         control.BoundWorkbookName = parentWbName;
                     }
 
-                    // Enforce Right side panel docking both before and after Visible
-                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                    // Enforce Left side panel docking both before and after Visible
+                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionLeft;
                     ctp.Width = 340;
                     ctp.Visible = true;
-                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionLeft;
                     ctp.Width = 340;
 
                     _taskPaneMap[hwnd] = ctp;
@@ -186,7 +186,7 @@ namespace ExcelSheetManager
                             }
                             catch { }
 
-                            ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                            ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionLeft;
                             ctp.Width = 340;
                             control.RefreshData();
                         }
