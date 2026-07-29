@@ -21,12 +21,11 @@ namespace ExcelSheetManager
                 _excelApp = (Excel.Application)ExcelDnaUtil.Application;
                 if (_excelApp != null)
                 {
-                    // Register Excel Application Event Listeners for Live Auto-Sync across windows
+                    // Register Excel Application Event Listeners for Structural Workbook Changes
                     _excelApp.WorkbookOpen += ExcelApp_WorkbookOpen;
                     _excelApp.WorkbookBeforeClose += ExcelApp_WorkbookBeforeClose;
                     _excelApp.WorkbookActivate += ExcelApp_WorkbookActivate;
                     _excelApp.WindowActivate += ExcelApp_WindowActivate;
-                    _excelApp.SheetActivate += ExcelApp_SheetActivate;
                     _excelApp.WorkbookNewSheet += ExcelApp_WorkbookNewSheet;
                 }
 
@@ -52,7 +51,6 @@ namespace ExcelSheetManager
                     _excelApp.WorkbookBeforeClose -= ExcelApp_WorkbookBeforeClose;
                     _excelApp.WorkbookActivate -= ExcelApp_WorkbookActivate;
                     _excelApp.WindowActivate -= ExcelApp_WindowActivate;
-                    _excelApp.SheetActivate -= ExcelApp_SheetActivate;
                     _excelApp.WorkbookNewSheet -= ExcelApp_WorkbookNewSheet;
                     _excelApp = null;
                 }
@@ -249,14 +247,6 @@ namespace ExcelSheetManager
         }
 
         private void ExcelApp_WorkbookBeforeClose(Excel.Workbook Wb, ref bool Cancel)
-        {
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                RefreshAllTaskPanes();
-            });
-        }
-
-        private void ExcelApp_SheetActivate(object Sh)
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {

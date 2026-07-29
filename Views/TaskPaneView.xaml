@@ -171,9 +171,7 @@
                      x:Name="WorkbooksListBox"
                      ItemsSource="{Binding FilteredWorkbooks}"
                      SelectedItem="{Binding SelectedWorkbook, Mode=TwoWay}"
-                     SelectionChanged="WorkbooksListBox_SelectionChanged"
                      ItemContainerStyle="{StaticResource FileListBoxItemStyle}"
-                     MouseDoubleClick="WorkbooksListBox_MouseDoubleClick"
                      Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
@@ -239,7 +237,6 @@
                      x:Name="SheetsListBox"
                      ItemsSource="{Binding FilteredSheets}"
                      SelectedItem="{Binding SelectedSheet, Mode=TwoWay}"
-                     SelectionChanged="SheetsListBox_SelectionChanged"
                      ItemContainerStyle="{StaticResource SheetListBoxItemStyle}"
                      Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
