@@ -4,6 +4,7 @@ using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
+using ExcelSheetManager.Helpers;
 using ExcelSheetManager.Views;
 using Excel = Microsoft.Office.Interop.Excel;
 
@@ -104,6 +105,8 @@ namespace ExcelSheetManager
 
                 if (createIfMissing)
                 {
+                    bool shouldBeVisible = SettingsHelper.GetIsTaskPaneVisible(defaultValue: true);
+
                     // Create CustomTaskPane with Title "Navigation" bound to targetWin
                     CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneControl), "Navigation", targetWin);
                     
@@ -115,9 +118,26 @@ namespace ExcelSheetManager
                     // Enforce Left side panel docking both before and after Visible
                     ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionLeft;
                     ctp.Width = 340;
-                    ctp.Visible = true;
-                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionLeft;
-                    ctp.Width = 340;
+                    ctp.Visible = shouldBeVisible;
+
+                    if (shouldBeVisible)
+                    {
+                        ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionLeft;
+                        ctp.Width = 340;
+                    }
+
+                    // Event listener to automatically persist visibility whenever user toggles or closes taskpane
+                    ctp.VisibleStateChange += (senderPane) =>
+                    {
+                        try
+                        {
+                            if (senderPane is CustomTaskPane pane)
+                            {
+                                SettingsHelper.SetIsTaskPaneVisible(pane.Visible);
+                            }
+                        }
+                        catch { }
+                    };
 
                     _taskPaneMap[hwnd] = ctp;
                     return ctp;
@@ -178,6 +198,8 @@ namespace ExcelSheetManager
                     if (_taskPaneMap.TryGetValue(hwnd, out var ctp) && IsTaskPaneAlive(ctp))
                     {
                         ctp.Visible = !ctp.Visible;
+                        SettingsHelper.SetIsTaskPaneVisible(ctp.Visible);
+
                         if (ctp.Visible && ctp.ContentControl is TaskPaneControl control)
                         {
                             try
@@ -194,9 +216,14 @@ namespace ExcelSheetManager
                     else
                     {
                         var newCtp = EnsureTaskPaneForWindow(activeWin, createIfMissing: true);
-                        if (newCtp?.ContentControl is TaskPaneControl control)
+                        if (newCtp != null)
                         {
-                            control.RefreshData();
+                            newCtp.Visible = true;
+                            SettingsHelper.SetIsTaskPaneVisible(true);
+                            if (newCtp.ContentControl is TaskPaneControl control)
+                            {
+                                control.RefreshData();
+                            }
                         }
                     }
                 }

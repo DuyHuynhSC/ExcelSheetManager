@@ -38,11 +38,6 @@ namespace ExcelSheetManager.Views
         private readonly Color _subTextColor = Color.FromArgb(148, 163, 184);// Slate 400 #94A3B8
 
         // Controls
-        private Panel _pnlHeader = null!;
-        private Label _lblTitle = null!;
-        private Label _lblSubTitle = null!;
-        private Button _btnRefresh = null!;
-
         private SplitContainer _splitContainer = null!;
 
         private Panel _pnlVung1Header = null!;
@@ -78,53 +73,7 @@ namespace ExcelSheetManager.Views
         {
             this.SuspendLayout();
 
-            // 1. HEADER PANEL
-            _pnlHeader = new Panel
-            {
-                Dock = DockStyle.Top,
-                Height = 60,
-                BackColor = _cardColor,
-                Padding = new Padding(10)
-            };
-
-            _lblTitle = new Label
-            {
-                Text = "📊 Excel Sheet Manager",
-                Font = new Font("Segoe UI", 11f, FontStyle.Bold),
-                ForeColor = _textColor,
-                AutoSize = true,
-                Location = new Point(10, 8)
-            };
-
-            _lblSubTitle = new Label
-            {
-                Text = "Workbook & Sheet Navigator",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Regular),
-                ForeColor = _subTextColor,
-                AutoSize = true,
-                Location = new Point(12, 32)
-            };
-
-            _btnRefresh = new Button
-            {
-                Text = "🔄 Refresh",
-                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(59, 130, 246),
-                FlatStyle = FlatStyle.Flat,
-                Size = new Size(85, 32),
-                Location = new Point(240, 14),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
-                Cursor = Cursors.Hand
-            };
-            _btnRefresh.FlatAppearance.BorderSize = 0;
-            _btnRefresh.Click += (s, e) => RefreshData();
-
-            _pnlHeader.Controls.Add(_lblTitle);
-            _pnlHeader.Controls.Add(_lblSubTitle);
-            _pnlHeader.Controls.Add(_btnRefresh);
-
-            // 2. STATUS LABEL (FOOTER)
+            // 1. STATUS LABEL (FOOTER)
             _lblStatus = new Label
             {
                 Dock = DockStyle.Bottom,
@@ -137,7 +86,7 @@ namespace ExcelSheetManager.Views
                 Text = "Ready"
             };
 
-            // 3. SPLIT CONTAINER (VÙNG 1 & VÙNG 2)
+            // 2. SPLIT CONTAINER (VÙNG 1 & VÙNG 2)
             _splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
@@ -243,7 +192,6 @@ namespace ExcelSheetManager.Views
 
             // ADD ALL TO CONTROL
             this.Controls.Add(_splitContainer);
-            this.Controls.Add(_pnlHeader);
             this.Controls.Add(_lblStatus);
 
             this.ResumeLayout(false);
@@ -647,7 +595,28 @@ namespace ExcelSheetManager.Views
             var item = (SheetItem)_lstSheets.Items[e.Index];
 
             bool isSelected = (e.Index == _lstSheets.SelectedIndex);
-            Color itemBg = isSelected ? Color.FromArgb(79, 70, 229) : _cardColor; // Indigo 600 if selected
+            Color tabColor = ColorTranslator.FromHtml(item.TabColorHex);
+
+            Color itemBg;
+            Color textCol;
+
+            if (isSelected)
+            {
+                itemBg = Color.FromArgb(79, 70, 229); // Indigo 600 if selected
+                textCol = Color.White;
+            }
+            else if (item.HasCustomTabColor)
+            {
+                itemBg = tabColor;
+                // High contrast text color calculation
+                double brightness = (tabColor.R * 0.299 + tabColor.G * 0.587 + tabColor.B * 0.114);
+                textCol = brightness > 160 ? Color.FromArgb(15, 23, 42) : Color.White;
+            }
+            else
+            {
+                itemBg = _cardColor;
+                textCol = _textColor;
+            }
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -657,19 +626,22 @@ namespace ExcelSheetManager.Views
                 e.Graphics.FillRectangle(brush, new Rectangle(e.Bounds.X + 2, e.Bounds.Y + 2, e.Bounds.Width - 4, e.Bounds.Height - 4));
             }
 
-            // Draw Tab Color Vertical Strip
-            Color tabColor = ColorTranslator.FromHtml(item.TabColorHex);
-            using (var tabBrush = new SolidBrush(tabColor))
+            // Draw subtle vertical tab color strip only for non-custom cards
+            if (!item.HasCustomTabColor && !isSelected)
             {
-                e.Graphics.FillRectangle(tabBrush, new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 6, 5, e.Bounds.Height - 12));
+                using (var tabBrush = new SolidBrush(tabColor))
+                {
+                    e.Graphics.FillRectangle(tabBrush, new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 6, 5, e.Bounds.Height - 12));
+                }
             }
 
-            // Draw Sheet Name across full width with EndEllipsis
+            // Draw Sheet Name across full width
+            int leftOffset = (item.HasCustomTabColor || isSelected) ? 10 : 18;
             int rightPadding = item.IsVisible ? 10 : 56;
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
-                Rectangle nameRect = new Rectangle(e.Bounds.X + 18, e.Bounds.Y + 4, e.Bounds.Width - 18 - rightPadding, e.Bounds.Height - 8);
-                TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, _textColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                Rectangle nameRect = new Rectangle(e.Bounds.X + leftOffset, e.Bounds.Y + 4, e.Bounds.Width - leftOffset - rightPadding, e.Bounds.Height - 8);
+                TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, textCol, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             }
 
             // Draw Hidden Badge if hidden
