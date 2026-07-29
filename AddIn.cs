@@ -29,7 +29,7 @@ namespace ExcelSheetManager
                     _excelApp.WorkbookNewSheet += ExcelApp_WorkbookNewSheet;
                 }
 
-                // Schedule taskpane creation on main Excel thread after loading completes
+                // Try safe initialization after Excel finishes startup
                 ExcelAsyncUtil.QueueAsMacro(() =>
                 {
                     InitializeTaskPane();
@@ -57,8 +57,9 @@ namespace ExcelSheetManager
 
                 if (_taskPane != null)
                 {
-                    _taskPane.Visible = false;
+                    try { _taskPane.Visible = false; } catch { }
                     _taskPane = null;
+                    _taskPaneHost = null;
                 }
             }
             catch
@@ -71,7 +72,19 @@ namespace ExcelSheetManager
         {
             try
             {
-                if (_taskPane == null)
+                if (_excelApp == null)
+                {
+                    _excelApp = (Excel.Application)ExcelDnaUtil.Application;
+                }
+
+                // If Excel has no workbooks open yet (e.g. Start Screen), defer creation until a workbook opens
+                if (_excelApp == null || _excelApp.Workbooks == null || _excelApp.Workbooks.Count == 0)
+                {
+                    return;
+                }
+
+                // Check if existing TaskPane COM wrapper is dead/disconnected
+                if (!IsTaskPaneValid())
                 {
                     _taskPane = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager");
                     _taskPaneHost = _taskPane.ContentControl as TaskPaneHost;
@@ -79,14 +92,33 @@ namespace ExcelSheetManager
                     _taskPane.Width = 340;
                     _taskPane.Visible = true;
                 }
-                else
+                else if (_taskPane != null)
                 {
                     _taskPane.Visible = true;
                 }
             }
             catch (Exception ex)
             {
-                MessageBox.Show($"Could not create TaskPane: {ex.Message}\n\n{ex.StackTrace}", "Excel Sheet Manager", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                _taskPane = null;
+                _taskPaneHost = null;
+                System.Diagnostics.Debug.WriteLine($"Could not create TaskPane: {ex.Message}");
+            }
+        }
+
+        private static bool IsTaskPaneValid()
+        {
+            if (_taskPane == null) return false;
+            try
+            {
+                // Touch property to verify COM object is alive
+                var dummy = _taskPane.Visible;
+                return true;
+            }
+            catch
+            {
+                _taskPane = null;
+                _taskPaneHost = null;
+                return false;
             }
         }
 
@@ -96,11 +128,11 @@ namespace ExcelSheetManager
             {
                 try
                 {
-                    if (_taskPane == null)
+                    if (!IsTaskPaneValid())
                     {
                         InitializeTaskPane();
                     }
-                    else
+                    else if (_taskPane != null)
                     {
                         _taskPane.Visible = !_taskPane.Visible;
                         if (_taskPane.Visible)
@@ -109,9 +141,11 @@ namespace ExcelSheetManager
                         }
                     }
                 }
-                catch (Exception ex)
+                catch
                 {
-                    MessageBox.Show($"Toggle Taskpane Error: {ex.Message}", "Excel Sheet Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                    _taskPane = null;
+                    _taskPaneHost = null;
+                    InitializeTaskPane();
                 }
             });
         }
@@ -120,6 +154,10 @@ namespace ExcelSheetManager
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
+                if (!IsTaskPaneValid())
+                {
+                    InitializeTaskPane();
+                }
                 _taskPaneHost?.ViewModel?.RefreshAllData();
             });
         }
