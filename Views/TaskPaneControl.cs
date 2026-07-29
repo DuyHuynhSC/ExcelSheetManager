@@ -33,7 +33,6 @@ namespace ExcelSheetManager.Views
         // UI Colors
         private readonly Color _bgColor = Color.FromArgb(15, 23, 42);      // Slate 900 #0F172A
         private readonly Color _cardColor = Color.FromArgb(30, 41, 59);    // Slate 800 #1E293B
-        private readonly Color _hoverColor = Color.FromArgb(51, 65, 85);   // Slate 700 #334155
         private readonly Color _selectColor = Color.FromArgb(2, 132, 199);  // Sky 600 #0284C7
         private readonly Color _textColor = Color.FromArgb(248, 250, 252);  // Slate 50 #F8FAFC
         private readonly Color _subTextColor = Color.FromArgb(148, 163, 184);// Slate 400 #94A3B8
@@ -159,7 +158,7 @@ namespace ExcelSheetManager.Views
 
             _lblVung1Title = new Label
             {
-                Text = "📁 OPEN FILES (0)",
+                Text = "📁 OPEN FILES",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
@@ -187,7 +186,7 @@ namespace ExcelSheetManager.Views
                 ForeColor = _textColor,
                 BorderStyle = BorderStyle.None,
                 DrawMode = DrawMode.OwnerDrawFixed,
-                ItemHeight = 44
+                ItemHeight = 36
             };
             _lstWorkbooks.DrawItem += DrawWorkbookItem;
             _lstWorkbooks.SelectedIndexChanged += LstWorkbooks_SelectedIndexChanged;
@@ -206,7 +205,7 @@ namespace ExcelSheetManager.Views
 
             _lblVung2Title = new Label
             {
-                Text = "📋 SHEETS (0)",
+                Text = "📋 SHEETS",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(129, 140, 248),
                 Dock = DockStyle.Top,
@@ -234,7 +233,7 @@ namespace ExcelSheetManager.Views
                 ForeColor = _textColor,
                 BorderStyle = BorderStyle.None,
                 DrawMode = DrawMode.OwnerDrawFixed,
-                ItemHeight = 40
+                ItemHeight = 36
             };
             _lstSheets.DrawItem += DrawSheetItem;
             _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
@@ -398,7 +397,7 @@ namespace ExcelSheetManager.Views
 
                 if (wbItem == null || wbItem.WorkbookRef is not Excel.Workbook wb)
                 {
-                    _lblVung2Title.Text = "📋 SHEETS (0)";
+                    _lblVung2Title.Text = "📋 SHEETS";
                     return;
                 }
 
@@ -439,7 +438,7 @@ namespace ExcelSheetManager.Views
                     }
                 }
 
-                _lblVung2Title.Text = $"📋 SHEETS IN {wb.Name} ({_allSheets.Count})";
+                _lblVung2Title.Text = $"📋 SHEETS ({_allSheets.Count})";
                 FilterSheetsList();
             }
             catch (Exception ex)
@@ -632,29 +631,13 @@ namespace ExcelSheetManager.Views
             }
 
             // Draw Icon
-            TextRenderer.DrawText(e.Graphics, "📄", new Font("Segoe UI", 11f), new Point(e.Bounds.X + 8, e.Bounds.Y + 10), _textColor);
+            TextRenderer.DrawText(e.Graphics, "📄", new Font("Segoe UI", 10.5f), new Point(e.Bounds.X + 6, e.Bounds.Y + 7), _textColor);
 
-            // Draw File Name
+            // Draw File Name across full width with EndEllipsis
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
-                TextRenderer.DrawText(e.Graphics, item.Name, fontName, new Point(e.Bounds.X + 34, e.Bounds.Y + 4), _textColor);
-            }
-
-            // Draw Subtitle / Path
-            using (var fontSub = new Font("Segoe UI", 8f, FontStyle.Regular))
-            {
-                TextRenderer.DrawText(e.Graphics, item.DisplaySubtitle, fontSub, new Rectangle(e.Bounds.X + 34, e.Bounds.Y + 24, e.Bounds.Width - 110, 16), _subTextColor, TextFormatFlags.EndEllipsis);
-            }
-
-            // Draw Sheet Count Badge
-            string badgeText = $"{item.SheetCount} sheets";
-            using (var fontBadge = new Font("Segoe UI", 8f, FontStyle.Bold))
-            using (var badgeBg = new SolidBrush(Color.FromArgb(51, 65, 85)))
-            {
-                var size = TextRenderer.MeasureText(badgeText, fontBadge);
-                Rectangle badgeRect = new Rectangle(e.Bounds.Right - size.Width - 12, e.Bounds.Y + 12, size.Width + 8, 20);
-                e.Graphics.FillRectangle(badgeBg, badgeRect);
-                TextRenderer.DrawText(e.Graphics, badgeText, fontBadge, new Point(badgeRect.X + 4, badgeRect.Y + 2), _textColor);
+                Rectangle nameRect = new Rectangle(e.Bounds.X + 30, e.Bounds.Y + 4, e.Bounds.Width - 36, e.Bounds.Height - 8);
+                TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, _textColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             }
         }
 
@@ -678,19 +661,15 @@ namespace ExcelSheetManager.Views
             Color tabColor = ColorTranslator.FromHtml(item.TabColorHex);
             using (var tabBrush = new SolidBrush(tabColor))
             {
-                e.Graphics.FillRectangle(tabBrush, new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 6, 6, e.Bounds.Height - 12));
+                e.Graphics.FillRectangle(tabBrush, new Rectangle(e.Bounds.X + 6, e.Bounds.Y + 6, 5, e.Bounds.Height - 12));
             }
 
-            // Draw Sheet Name
+            // Draw Sheet Name across full width with EndEllipsis
+            int rightPadding = item.IsVisible ? 10 : 56;
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
-                TextRenderer.DrawText(e.Graphics, item.Name, fontName, new Point(e.Bounds.X + 20, e.Bounds.Y + 4), _textColor);
-            }
-
-            // Draw Sheet Type
-            using (var fontType = new Font("Segoe UI", 8f, FontStyle.Regular))
-            {
-                TextRenderer.DrawText(e.Graphics, item.SheetType, fontType, new Point(e.Bounds.X + 20, e.Bounds.Y + 22), _subTextColor);
+                Rectangle nameRect = new Rectangle(e.Bounds.X + 18, e.Bounds.Y + 4, e.Bounds.Width - 18 - rightPadding, e.Bounds.Height - 8);
+                TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, _textColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             }
 
             // Draw Hidden Badge if hidden
@@ -699,9 +678,9 @@ namespace ExcelSheetManager.Views
                 using (var fontBadge = new Font("Segoe UI", 7.5f, FontStyle.Bold))
                 using (var badgeBg = new SolidBrush(Color.FromArgb(239, 68, 68))) // Red 500
                 {
-                    Rectangle badgeRect = new Rectangle(e.Bounds.Right - 55, e.Bounds.Y + 10, 48, 18);
+                    Rectangle badgeRect = new Rectangle(e.Bounds.Right - 52, e.Bounds.Y + 8, 46, 18);
                     e.Graphics.FillRectangle(badgeBg, badgeRect);
-                    TextRenderer.DrawText(e.Graphics, "Hidden", fontBadge, new Point(badgeRect.X + 6, badgeRect.Y + 2), Color.White);
+                    TextRenderer.DrawText(e.Graphics, "Hidden", fontBadge, new Point(badgeRect.X + 5, badgeRect.Y + 2), Color.White);
                 }
             }
         }

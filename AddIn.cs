@@ -104,8 +104,8 @@ namespace ExcelSheetManager
 
                 if (createIfMissing)
                 {
-                    // Create CustomTaskPane using pure WinForms TaskPaneControl directly bound to targetWin
-                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneControl), "Sheet & File Manager", targetWin);
+                    // Create CustomTaskPane with Title "Navigation" bound to targetWin
+                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneControl), "Navigation", targetWin);
                     
                     if (ctp.ContentControl is TaskPaneControl control && !string.IsNullOrEmpty(parentWbName))
                     {
