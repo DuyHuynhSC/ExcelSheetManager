@@ -14,6 +14,7 @@ namespace ExcelSheetManager
     {
         private static readonly Dictionary<int, CustomTaskPane> _taskPaneMap = new Dictionary<int, CustomTaskPane>();
         private static Excel.Application? _excelApp;
+        private static System.Windows.Forms.Timer? _startupTimer;
 
         public void AutoOpen()
         {
@@ -27,11 +28,30 @@ namespace ExcelSheetManager
                     _excelApp.WorkbookBeforeClose += ExcelApp_WorkbookBeforeClose;
                 }
 
-                // Initialize taskpane for active window on startup
-                ExcelAsyncUtil.QueueAsMacro(() =>
+                // Run immediate attempt
+                TryInitializeStartupTaskPane();
+
+                // Start short polling timer (every 200ms up to 3 sec) until Excel's main window finishes initializing
+                int attempts = 0;
+                _startupTimer = new System.Windows.Forms.Timer
                 {
-                    EnsureTaskPaneForWindow(_excelApp?.ActiveWindow, createIfMissing: true);
-                });
+                    Interval = 200
+                };
+                _startupTimer.Tick += (s, e) =>
+                {
+                    attempts++;
+                    bool initialized = TryInitializeStartupTaskPane();
+                    if (initialized || attempts > 15) // Max 3 seconds
+                    {
+                        if (_startupTimer != null)
+                        {
+                            _startupTimer.Stop();
+                            _startupTimer.Dispose();
+                            _startupTimer = null;
+                        }
+                    }
+                };
+                _startupTimer.Start();
             }
             catch (Exception ex)
             {
@@ -39,10 +59,33 @@ namespace ExcelSheetManager
             }
         }
 
+        private static bool TryInitializeStartupTaskPane()
+        {
+            try
+            {
+                if (_excelApp == null) _excelApp = (Excel.Application)ExcelDnaUtil.Application;
+                var activeWin = _excelApp?.ActiveWindow;
+                if (activeWin != null)
+                {
+                    EnsureTaskPaneForWindow(activeWin, createIfMissing: true);
+                    return true;
+                }
+            }
+            catch { }
+            return false;
+        }
+
         public void AutoClose()
         {
             try
             {
+                if (_startupTimer != null)
+                {
+                    _startupTimer.Stop();
+                    _startupTimer.Dispose();
+                    _startupTimer = null;
+                }
+
                 if (_excelApp != null)
                 {
                     _excelApp.WorkbookOpen -= ExcelApp_WorkbookOpen;
