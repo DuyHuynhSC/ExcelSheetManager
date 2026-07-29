@@ -185,7 +185,6 @@ namespace ExcelSheetManager.Views
             };
             _lstWorkbooks.DrawItem += DrawWorkbookItem;
             _lstWorkbooks.SelectedIndexChanged += LstWorkbooks_SelectedIndexChanged;
-            _lstWorkbooks.MouseClick += LstWorkbooks_MouseClick;
 
             _splitContainer.Panel1.Controls.Add(_lstWorkbooks);
             _splitContainer.Panel1.Controls.Add(_pnlVung1Header);
@@ -233,7 +232,6 @@ namespace ExcelSheetManager.Views
             };
             _lstSheets.DrawItem += DrawSheetItem;
             _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
-            _lstSheets.MouseClick += LstSheets_MouseClick;
 
             _splitContainer.Panel2.Controls.Add(_lstSheets);
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
@@ -324,7 +322,7 @@ namespace ExcelSheetManager.Views
                 }
             }
 
-            if (idx >= 0)
+            if (idx >= 0 && _lstWorkbooks.SelectedIndex != idx)
             {
                 _lstWorkbooks.SelectedIndex = idx;
                 _lstWorkbooks.Invalidate();
@@ -473,7 +471,7 @@ namespace ExcelSheetManager.Views
             }
         }
 
-        // --- SELECTION & CLICK HANDLERS ---
+        // --- SINGLE-POINT SELECTION EVENT HANDLERS ---
         private void LstWorkbooks_SelectedIndexChanged(object? sender, EventArgs e)
         {
             if (_isUpdatingUi) return;
@@ -481,28 +479,14 @@ namespace ExcelSheetManager.Views
             {
                 if (_lstWorkbooks.Items[_lstWorkbooks.SelectedIndex] is WorkbookItem item)
                 {
+                    _isUpdatingUi = true;
                     _selectedWorkbook = item;
                     _lstWorkbooks.Invalidate();
+
                     LoadSheetsForWorkbook(item);
                     ActivateWorkbookInExcel(item);
+                    _isUpdatingUi = false;
                 }
-            }
-        }
-
-        private void LstWorkbooks_MouseClick(object? sender, MouseEventArgs e)
-        {
-            if (_isUpdatingUi) return;
-            int idx = _lstWorkbooks.IndexFromPoint(e.Location);
-            if (idx >= 0 && idx < _lstWorkbooks.Items.Count && _lstWorkbooks.Items[idx] is WorkbookItem item)
-            {
-                _isUpdatingUi = true;
-                _lstWorkbooks.SelectedIndex = idx;
-                _selectedWorkbook = item;
-                _lstWorkbooks.Invalidate();
-
-                LoadSheetsForWorkbook(item);
-                ActivateWorkbookInExcel(item);
-                _isUpdatingUi = false;
             }
         }
 
@@ -513,21 +497,11 @@ namespace ExcelSheetManager.Views
             {
                 if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem item)
                 {
+                    _isUpdatingUi = true;
                     _lstSheets.Invalidate();
                     ActivateSheetInExcel(item);
+                    _isUpdatingUi = false;
                 }
-            }
-        }
-
-        private void LstSheets_MouseClick(object? sender, MouseEventArgs e)
-        {
-            if (_isUpdatingUi) return;
-            int idx = _lstSheets.IndexFromPoint(e.Location);
-            if (idx >= 0 && idx < _lstSheets.Items.Count && _lstSheets.Items[idx] is SheetItem item)
-            {
-                _lstSheets.SelectedIndex = idx;
-                _lstSheets.Invalidate();
-                ActivateSheetInExcel(item);
             }
         }
 
