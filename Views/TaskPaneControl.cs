@@ -81,34 +81,34 @@ namespace ExcelSheetManager.Views
             _pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 42,
+                Height = 36,
                 BackColor = _cardColor,
-                Padding = new Padding(8, 4, 8, 4)
-            };
-
-            _lblTitle = new Label
-            {
-                Text = "📊 Navigation",
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
-                ForeColor = _textColor,
-                AutoSize = true,
-                Location = new Point(10, 10)
+                Padding = new Padding(6, 4, 6, 4)
             };
 
             _btnRefresh = new Button
             {
-                Text = "🔄 Refresh",
+                Dock = DockStyle.Right,
+                Width = 85,
+                Text = "Refresh",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
                 BackColor = Color.FromArgb(59, 130, 246),
                 FlatStyle = FlatStyle.Flat,
-                Size = new Size(80, 28),
-                Location = new Point(245, 7),
-                Anchor = AnchorStyles.Top | AnchorStyles.Right,
                 Cursor = Cursors.Hand
             };
             _btnRefresh.FlatAppearance.BorderSize = 0;
             _btnRefresh.Click += (s, e) => RefreshData();
+
+            _lblTitle = new Label
+            {
+                Dock = DockStyle.Fill,
+                Text = "NAVIGATOR",
+                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(56, 189, 248),
+                TextAlign = ContentAlignment.MiddleLeft,
+                Padding = new Padding(4, 0, 0, 0)
+            };
 
             _pnlHeader.Controls.Add(_lblTitle);
             _pnlHeader.Controls.Add(_btnRefresh);
@@ -233,7 +233,7 @@ namespace ExcelSheetManager.Views
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
             _splitContainer.Panel2.BackColor = _bgColor;
 
-            // ADD CONTROLS WITH CORRECT WINFORMS DOCKING Z-ORDER
+            // ADD CONTROLS WITH DOCKING Z-ORDER
             this.Controls.Add(_splitContainer);
             this.Controls.Add(_lblStatus);
             this.Controls.Add(_pnlHeader);
@@ -258,7 +258,7 @@ namespace ExcelSheetManager.Views
             {
                 if (_splitContainer != null && this.Height > 160)
                 {
-                    int availableHeight = this.Height - (_pnlHeader?.Height ?? 42) - (_lblStatus?.Height ?? 24);
+                    int availableHeight = this.Height - (_pnlHeader?.Height ?? 36) - (_lblStatus?.Height ?? 24);
                     int half = availableHeight / 2;
                     if (half >= _splitContainer.Panel1MinSize && half <= availableHeight - _splitContainer.Panel2MinSize)
                     {
