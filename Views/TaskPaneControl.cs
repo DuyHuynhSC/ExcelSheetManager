@@ -682,7 +682,7 @@ namespace ExcelSheetManager.Views
                     parentWb.Activate();
                     if (parentWb.Windows != null && parentWb.Windows.Count > 0)
                     {
-                        Excel.Window win = (Excel.Workbook)parentWb.Windows[1];
+                        Excel.Window win = (Excel.Window)parentWb.Windows[1];
                         win.Activate();
                         IntPtr hwnd = new IntPtr(win.Hwnd);
                         if (hwnd != IntPtr.Zero)
