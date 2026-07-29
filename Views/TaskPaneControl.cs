@@ -182,8 +182,9 @@ namespace ExcelSheetManager.Views
             _lstWorkbooks.DrawItem += DrawWorkbookItem;
             _lstWorkbooks.SelectedIndexChanged += LstWorkbooks_SelectedIndexChanged;
 
-            _splitContainer.Panel1.Controls.Add(_lstWorkbooks);
+            // CORRECT DOCK ORDER IN PANEL 1: TOP HEADER FIRST, FILL LISTBOX SECOND
             _splitContainer.Panel1.Controls.Add(_pnlVung1Header);
+            _splitContainer.Panel1.Controls.Add(_lstWorkbooks);
             _splitContainer.Panel1.BackColor = _bgColor;
 
             // --- VÙNG 2: SHEETS LIST ---
@@ -230,8 +231,9 @@ namespace ExcelSheetManager.Views
             _lstSheets.DrawItem += DrawSheetItem;
             _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
 
-            _splitContainer.Panel2.Controls.Add(_lstSheets);
+            // CORRECT DOCK ORDER IN PANEL 2: TOP HEADER FIRST, FILL LISTBOX SECOND
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
+            _splitContainer.Panel2.Controls.Add(_lstSheets);
             _splitContainer.Panel2.BackColor = _bgColor;
 
             // ADD CONTROLS IN PROPER WINFORMS DOCK ORDER: TOP -> BOTTOM -> FILL
