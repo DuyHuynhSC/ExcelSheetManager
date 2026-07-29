@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using ExcelDna.Integration;
@@ -10,8 +11,7 @@ namespace ExcelSheetManager
 {
     public class AddIn : IExcelAddIn
     {
-        private static CustomTaskPane? _taskPane;
-        private static TaskPaneHost? _taskPaneHost;
+        private static readonly Dictionary<int, CustomTaskPane> _taskPaneMap = new Dictionary<int, CustomTaskPane>();
         private static Excel.Application? _excelApp;
 
         public void AutoOpen()
@@ -21,18 +21,19 @@ namespace ExcelSheetManager
                 _excelApp = (Excel.Application)ExcelDnaUtil.Application;
                 if (_excelApp != null)
                 {
-                    // Register Excel Application Event Listeners for Live Auto-Sync
+                    // Register Excel Application Event Listeners for Live Auto-Sync across windows
                     _excelApp.WorkbookOpen += ExcelApp_WorkbookOpen;
                     _excelApp.WorkbookBeforeClose += ExcelApp_WorkbookBeforeClose;
                     _excelApp.WorkbookActivate += ExcelApp_WorkbookActivate;
+                    _excelApp.WindowActivate += ExcelApp_WindowActivate;
                     _excelApp.SheetActivate += ExcelApp_SheetActivate;
                     _excelApp.WorkbookNewSheet += ExcelApp_WorkbookNewSheet;
                 }
 
-                // Try safe initialization after Excel finishes startup
+                // Initialize taskpane for active window
                 ExcelAsyncUtil.QueueAsMacro(() =>
                 {
-                    InitializeTaskPane();
+                    EnsureTaskPaneForActiveWindow(createIfMissing: true);
                 });
             }
             catch (Exception ex)
@@ -50,17 +51,17 @@ namespace ExcelSheetManager
                     _excelApp.WorkbookOpen -= ExcelApp_WorkbookOpen;
                     _excelApp.WorkbookBeforeClose -= ExcelApp_WorkbookBeforeClose;
                     _excelApp.WorkbookActivate -= ExcelApp_WorkbookActivate;
+                    _excelApp.WindowActivate -= ExcelApp_WindowActivate;
                     _excelApp.SheetActivate -= ExcelApp_SheetActivate;
                     _excelApp.WorkbookNewSheet -= ExcelApp_WorkbookNewSheet;
                     _excelApp = null;
                 }
 
-                if (_taskPane != null)
+                foreach (var ctp in _taskPaneMap.Values)
                 {
-                    try { _taskPane.Visible = false; } catch { }
-                    _taskPane = null;
-                    _taskPaneHost = null;
+                    try { ctp.Visible = false; ctp.Delete(); } catch { }
                 }
+                _taskPaneMap.Clear();
             }
             catch
             {
@@ -68,7 +69,7 @@ namespace ExcelSheetManager
             }
         }
 
-        public static void InitializeTaskPane()
+        public static CustomTaskPane? EnsureTaskPaneForActiveWindow(bool createIfMissing = true)
         {
             try
             {
@@ -77,47 +78,57 @@ namespace ExcelSheetManager
                     _excelApp = (Excel.Application)ExcelDnaUtil.Application;
                 }
 
-                // If Excel has no workbooks open yet (e.g. Start Screen), defer creation until a workbook opens
                 if (_excelApp == null || _excelApp.Workbooks == null || _excelApp.Workbooks.Count == 0)
                 {
-                    return;
+                    return null;
                 }
 
-                // Check if existing TaskPane COM wrapper is dead/disconnected
-                if (!IsTaskPaneValid())
+                Excel.Window activeWin = _excelApp.ActiveWindow;
+                if (activeWin == null) return null;
+
+                int hwnd = activeWin.Hwnd;
+
+                if (_taskPaneMap.TryGetValue(hwnd, out var existingCtp))
                 {
-                    _taskPane = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager");
-                    _taskPaneHost = _taskPane.ContentControl as TaskPaneHost;
-                    _taskPane.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
-                    _taskPane.Width = 340;
-                    _taskPane.Visible = true;
+                    if (IsTaskPaneAlive(existingCtp))
+                    {
+                        return existingCtp;
+                    }
+                    else
+                    {
+                        _taskPaneMap.Remove(hwnd);
+                    }
                 }
-                else if (_taskPane != null)
+
+                if (createIfMissing)
                 {
-                    _taskPane.Visible = true;
+                    // Create CustomTaskPane specifically bound to this Excel.Window instance
+                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager", activeWin);
+                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                    ctp.Width = 340;
+                    ctp.Visible = true;
+
+                    _taskPaneMap[hwnd] = ctp;
+                    return ctp;
                 }
             }
             catch (Exception ex)
             {
-                _taskPane = null;
-                _taskPaneHost = null;
-                System.Diagnostics.Debug.WriteLine($"Could not create TaskPane: {ex.Message}");
+                System.Diagnostics.Debug.WriteLine($"Taskpane Creation Exception: {ex.Message}");
             }
+            return null;
         }
 
-        private static bool IsTaskPaneValid()
+        private static bool IsTaskPaneAlive(CustomTaskPane ctp)
         {
-            if (_taskPane == null) return false;
+            if (ctp == null) return false;
             try
             {
-                // Touch property to verify COM object is alive
-                var dummy = _taskPane.Visible;
+                var dummy = ctp.Visible;
                 return true;
             }
             catch
             {
-                _taskPane = null;
-                _taskPaneHost = null;
                 return false;
             }
         }
@@ -128,49 +139,112 @@ namespace ExcelSheetManager
             {
                 try
                 {
-                    if (!IsTaskPaneValid())
+                    if (_excelApp == null) _excelApp = (Excel.Application)ExcelDnaUtil.Application;
+                    if (_excelApp?.ActiveWindow == null) return;
+
+                    int hwnd = _excelApp.ActiveWindow.Hwnd;
+                    if (_taskPaneMap.TryGetValue(hwnd, out var ctp) && IsTaskPaneAlive(ctp))
                     {
-                        InitializeTaskPane();
-                    }
-                    else if (_taskPane != null)
-                    {
-                        _taskPane.Visible = !_taskPane.Visible;
-                        if (_taskPane.Visible)
+                        ctp.Visible = !ctp.Visible;
+                        if (ctp.Visible)
                         {
-                            RefreshTaskPane();
+                            RefreshAllTaskPanes();
                         }
                     }
+                    else
+                    {
+                        EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                        RefreshAllTaskPanes();
+                    }
                 }
-                catch
+                catch (Exception ex)
                 {
-                    _taskPane = null;
-                    _taskPaneHost = null;
-                    InitializeTaskPane();
+                    System.Diagnostics.Debug.WriteLine($"Toggle error: {ex.Message}");
                 }
             });
         }
 
         public static void RefreshTaskPane()
         {
+            RefreshAllTaskPanes();
+        }
+
+        public static void RefreshAllTaskPanes()
+        {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                if (!IsTaskPaneValid())
+                List<int> deadHwnds = new List<int>();
+                foreach (var kvp in _taskPaneMap)
                 {
-                    InitializeTaskPane();
+                    if (IsTaskPaneAlive(kvp.Value))
+                    {
+                        if (kvp.Value.ContentControl is TaskPaneHost host && host.ViewModel != null)
+                        {
+                            host.ViewModel.RefreshAllData();
+                        }
+                    }
+                    else
+                    {
+                        deadHwnds.Add(kvp.Key);
+                    }
                 }
-                _taskPaneHost?.ViewModel?.RefreshAllData();
+
+                foreach (var h in deadHwnds)
+                {
+                    _taskPaneMap.Remove(h);
+                }
             });
         }
 
-        private void ExcelApp_WorkbookOpen(Excel.Workbook Wb) => TriggerRefresh();
-        private void ExcelApp_WorkbookBeforeClose(Excel.Workbook Wb, ref bool Cancel) => TriggerRefresh();
-        private void ExcelApp_WorkbookActivate(Excel.Workbook Wb) => TriggerRefresh();
-        private void ExcelApp_SheetActivate(object Sh) => TriggerRefresh();
-        private void ExcelApp_WorkbookNewSheet(Excel.Workbook Wb, object Sh) => TriggerRefresh();
-
-        private static void TriggerRefresh()
+        private void ExcelApp_WorkbookOpen(Excel.Workbook Wb)
         {
-            RefreshTaskPane();
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                RefreshAllTaskPanes();
+            });
+        }
+
+        private void ExcelApp_WorkbookActivate(Excel.Workbook Wb)
+        {
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                RefreshAllTaskPanes();
+            });
+        }
+
+        private void ExcelApp_WindowActivate(Excel.Workbook Wb, Excel.Window Wn)
+        {
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                RefreshAllTaskPanes();
+            });
+        }
+
+        private void ExcelApp_WorkbookBeforeClose(Excel.Workbook Wb, ref bool Cancel)
+        {
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                RefreshAllTaskPanes();
+            });
+        }
+
+        private void ExcelApp_SheetActivate(object Sh)
+        {
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                RefreshAllTaskPanes();
+            });
+        }
+
+        private void ExcelApp_WorkbookNewSheet(Excel.Workbook Wb, object Sh)
+        {
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                RefreshAllTaskPanes();
+            });
         }
     }
 }
