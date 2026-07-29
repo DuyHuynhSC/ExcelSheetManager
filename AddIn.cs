@@ -1,5 +1,6 @@
 using System;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 using ExcelSheetManager.Views;
@@ -28,7 +29,11 @@ namespace ExcelSheetManager
                     _excelApp.WorkbookNewSheet += ExcelApp_WorkbookNewSheet;
                 }
 
-                InitializeTaskPane();
+                // Schedule taskpane creation on main Excel thread after loading completes
+                ExcelAsyncUtil.QueueAsMacro(() =>
+                {
+                    InitializeTaskPane();
+                });
             }
             catch (Exception ex)
             {
@@ -64,35 +69,59 @@ namespace ExcelSheetManager
 
         public static void InitializeTaskPane()
         {
-            if (_taskPane == null)
+            try
             {
-                _taskPaneHost = new TaskPaneHost();
-                _taskPane = CustomTaskPaneFactory.CreateCustomTaskPane(_taskPaneHost, "Sheet & File Manager");
-                _taskPane.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
-                _taskPane.Width = 340;
-                _taskPane.Visible = true;
+                if (_taskPane == null)
+                {
+                    _taskPane = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager");
+                    _taskPaneHost = _taskPane.ContentControl as TaskPaneHost;
+                    _taskPane.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                    _taskPane.Width = 340;
+                    _taskPane.Visible = true;
+                }
+                else
+                {
+                    _taskPane.Visible = true;
+                }
             }
-            else
+            catch (Exception ex)
             {
-                _taskPane.Visible = true;
+                MessageBox.Show($"Could not create TaskPane: {ex.Message}\n\n{ex.StackTrace}", "Excel Sheet Manager", MessageBoxButtons.OK, MessageBoxIcon.Warning);
             }
         }
 
         public static void ToggleTaskPane()
         {
-            if (_taskPane == null)
+            ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                InitializeTaskPane();
-            }
-            else
-            {
-                _taskPane.Visible = !_taskPane.Visible;
-            }
+                try
+                {
+                    if (_taskPane == null)
+                    {
+                        InitializeTaskPane();
+                    }
+                    else
+                    {
+                        _taskPane.Visible = !_taskPane.Visible;
+                        if (_taskPane.Visible)
+                        {
+                            RefreshTaskPane();
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    MessageBox.Show($"Toggle Taskpane Error: {ex.Message}", "Excel Sheet Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+                }
+            });
         }
 
         public static void RefreshTaskPane()
         {
-            _taskPaneHost?.ViewModel?.RefreshAllData();
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                _taskPaneHost?.ViewModel?.RefreshAllData();
+            });
         }
 
         private void ExcelApp_WorkbookOpen(Excel.Workbook Wb) => TriggerRefresh();
@@ -103,11 +132,7 @@ namespace ExcelSheetManager
 
         private static void TriggerRefresh()
         {
-            // Run refresh safely via ExcelAsyncUtil
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                _taskPaneHost?.ViewModel?.RefreshAllData();
-            });
+            RefreshTaskPane();
         }
     }
 }

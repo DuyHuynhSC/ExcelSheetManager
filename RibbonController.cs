@@ -1,4 +1,6 @@
+using System;
 using System.Runtime.InteropServices;
+using System.Windows.Forms;
 using ExcelDna.Integration;
 using ExcelDna.Integration.CustomUI;
 
@@ -18,12 +20,12 @@ namespace ExcelSheetManager
           <button id='btnToggleTaskPane' 
                   label='Toggle Taskpane' 
                   size='large' 
-                  imageMso='SheetManager' 
+                  imageMso='GroupWorksheet' 
                   onAction='OnToggleTaskPane' />
           <button id='btnRefreshTaskPane' 
                   label='Refresh Lists' 
                   size='large' 
-                  imageMso='Refresh' 
+                  imageMso='RefreshAll' 
                   onAction='OnRefreshTaskPane' />
         </group>
       </tab>
@@ -34,12 +36,26 @@ namespace ExcelSheetManager
 
         public void OnToggleTaskPane(IRibbonControl control)
         {
-            AddIn.ToggleTaskPane();
+            try
+            {
+                AddIn.ToggleTaskPane();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Toggle Taskpane Error: {ex.Message}\n\n{ex.StackTrace}", "Excel Sheet Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
 
         public void OnRefreshTaskPane(IRibbonControl control)
         {
-            AddIn.RefreshTaskPane();
+            try
+            {
+                AddIn.RefreshTaskPane();
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show($"Refresh Error: {ex.Message}\n\n{ex.StackTrace}", "Excel Sheet Manager", MessageBoxButtons.OK, MessageBoxIcon.Error);
+            }
         }
     }
 }
