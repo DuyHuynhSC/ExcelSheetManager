@@ -1,0 +1,288 @@
+<UserControl x:Class="ExcelSheetManager.Views.TaskPaneView"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006" 
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008" 
+             xmlns:vm="clr-namespace:ExcelSheetManager.ViewModels"
+             mc:Ignorable="d" 
+             d:DesignHeight="700" d:DesignWidth="320"
+             Background="#0F172A" Foreground="#F8FAFC"
+             FontFamily="Segoe UI, Segoe UI Variable, sans-serif">
+
+    <UserControl.Resources>
+        <BooleanToVisibilityConverter x:Key="BoolToVisConverter"/>
+
+        <!-- Custom ListBoxItem Style for Files -->
+        <Style x:Key="FileListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#334155"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#0284C7"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#38BDF8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+
+        <!-- Custom ListBoxItem Style for Sheets -->
+        <Style x:Key="SheetListBoxItemStyle" TargetType="ListBoxItem">
+            <Setter Property="Padding" Value="8,6"/>
+            <Setter Property="Margin" Value="0,2"/>
+            <Setter Property="Background" Value="#1E293B"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="BorderBrush" Value="#334155"/>
+            <Setter Property="HorizontalContentAlignment" Value="Stretch"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="ListBoxItem">
+                        <Border x:Name="border" 
+                                Background="{TemplateBinding Background}" 
+                                BorderBrush="{TemplateBinding BorderBrush}" 
+                                BorderThickness="{TemplateBinding BorderThickness}" 
+                                CornerRadius="6" 
+                                Padding="{TemplateBinding Padding}">
+                            <ContentPresenter />
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#334155"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#818CF8"/>
+                            </Trigger>
+                            <Trigger Property="IsSelected" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#4F46E5"/>
+                                <Setter TargetName="border" Property="BorderBrush" Value="#818CF8"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+
+    <Grid Margin="10">
+        <Grid.RowDefinitions>
+            <!-- Header Toolbar -->
+            <RowDefinition Height="Auto"/>
+            <!-- Vùng 1: Open Files List -->
+            <RowDefinition Height="1*"/>
+            <!-- Grid Splitter -->
+            <RowDefinition Height="Auto"/>
+            <!-- Vùng 2: Sheet List -->
+            <RowDefinition Height="1.2*"/>
+            <!-- Footer Status Bar -->
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+
+        <!-- HEADER TOOLBAR -->
+        <Border Grid.Row="0" Background="#1E293B" CornerRadius="8" Padding="10" Margin="0,0,0,10">
+            <Grid>
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto"/>
+                </Grid.ColumnDefinitions>
+
+                <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                    <TextBlock Text="📊" FontSize="18" Margin="0,0,8,0" VerticalAlignment="Center"/>
+                    <StackPanel>
+                        <TextBlock Text="Excel Sheet Manager" FontWeight="Bold" FontSize="14" Foreground="#F8FAFC"/>
+                        <TextBlock Text="Workbook &amp; Sheet Navigator" FontSize="11" Foreground="#94A3B8"/>
+                    </StackPanel>
+                </StackPanel>
+
+                <!-- Refresh Button -->
+                <Button Grid.Column="1" 
+                        Command="{Binding RefreshCommand}" 
+                        ToolTip="Refresh files and sheets"
+                        Cursor="Hand"
+                        Background="#3B82F6" Foreground="White" 
+                        BorderThickness="0" Padding="10,6">
+                    <Button.Template>
+                        <ControlTemplate TargetType="Button">
+                            <Border Background="{TemplateBinding Background}" CornerRadius="6" Padding="{TemplateBinding Padding}">
+                                <StackPanel Orientation="Horizontal">
+                                    <TextBlock Text="🔄" Margin="0,0,4,0" VerticalAlignment="Center"/>
+                                    <TextBlock Text="Refresh" FontWeight="SemiBold" FontSize="12" Foreground="White"/>
+                                </StackPanel>
+                            </Border>
+                            <ControlTemplate.Triggers>
+                                <Trigger Property="IsMouseOver" Value="True">
+                                    <Setter Property="Background" Value="#2563EB"/>
+                                </Trigger>
+                            </ControlTemplate.Triggers>
+                        </ControlTemplate>
+                    </Button.Template>
+                </Button>
+            </Grid>
+        </Border>
+
+        <!-- VÙNG 1: OPEN EXCEL FILES -->
+        <Grid Grid.Row="1" Margin="0,0,0,5">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Region 1 Header -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,0,0,6">
+                <TextBlock Text="📁 OPEN FILES" FontWeight="Bold" FontSize="12" Foreground="#38BDF8"/>
+                <TextBlock Text="{Binding TotalWorkbooksCount, StringFormat='{} ({0})'}" FontWeight="Bold" FontSize="12" Foreground="#94A3B8"/>
+            </StackPanel>
+
+            <!-- File Search Filter Input -->
+            <Border Grid.Row="1" Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="6,4" Margin="0,0,0,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🔍" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="2,0,6,0"/>
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding WorkbookFilterText, UpdateSourceTrigger=PropertyChanged}" 
+                             Background="Transparent" Foreground="#F8FAFC" BorderThickness="0" 
+                             FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Workbooks ListBox -->
+            <ListBox Grid.Row="2" 
+                     x:Name="WorkbooksListBox"
+                     ItemsSource="{Binding FilteredWorkbooks}"
+                     SelectedItem="{Binding SelectedWorkbook, Mode=TwoWay}"
+                     ItemContainerStyle="{StaticResource FileListBoxItemStyle}"
+                     MouseDoubleClick="WorkbooksListBox_MouseDoubleClick"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <ColumnDefinition Width="Auto"/>
+                                <ColumnDefinition Width="*"/>
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <TextBlock Grid.Column="0" Text="📄" FontSize="14" VerticalAlignment="Center" Margin="0,0,8,0"/>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="SemiBold" FontSize="12" Foreground="#F8FAFC" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding DisplaySubtitle}" FontSize="10" Foreground="#94A3B8" TextTrimming="CharacterEllipsis" ToolTip="{Binding FullPath}"/>
+                            </StackPanel>
+
+                            <Border Grid.Column="2" Background="#334155" CornerRadius="10" Padding="6,2" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding SheetCount, StringFormat='{} {0} sheets'}" FontSize="10" Foreground="#CBD5E1"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <!-- SPLITTER -->
+        <GridSplitter Grid.Row="2" Height="6" HorizontalAlignment="Stretch" Background="#334155" Margin="0,4,0,4" Cursor="SizeNS"/>
+
+        <!-- VÙNG 2: SHEETS LIST -->
+        <Grid Grid.Row="3" Margin="0,5,0,0">
+            <Grid.RowDefinitions>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="Auto"/>
+                <RowDefinition Height="*"/>
+            </Grid.RowDefinitions>
+
+            <!-- Region 2 Header -->
+            <StackPanel Grid.Row="0" Orientation="Horizontal" Margin="2,0,0,6">
+                <TextBlock Text="📋 SHEETS" FontWeight="Bold" FontSize="12" Foreground="#818CF8"/>
+                <TextBlock Text="{Binding SelectedWorkbook.Name, StringFormat='{} IN {0}'}" FontWeight="Bold" FontSize="11" Foreground="#94A3B8" TextTrimming="CharacterEllipsis" MaxWidth="160"/>
+                <TextBlock Text="{Binding TotalSheetsCount, StringFormat='{} ({0})'}" FontWeight="Bold" FontSize="12" Foreground="#94A3B8"/>
+            </StackPanel>
+
+            <!-- Sheet Search Filter Input -->
+            <Border Grid.Row="1" Background="#1E293B" CornerRadius="6" BorderBrush="#334155" BorderThickness="1" Padding="6,4" Margin="0,0,0,6">
+                <Grid>
+                    <Grid.ColumnDefinitions>
+                        <ColumnDefinition Width="Auto"/>
+                        <ColumnDefinition Width="*"/>
+                    </Grid.ColumnDefinitions>
+                    <TextBlock Text="🔍" FontSize="11" Foreground="#64748B" VerticalAlignment="Center" Margin="2,0,6,0"/>
+                    <TextBox Grid.Column="1" 
+                             Text="{Binding SheetFilterText, UpdateSourceTrigger=PropertyChanged}" 
+                             Background="Transparent" Foreground="#F8FAFC" BorderThickness="0" 
+                             FontSize="12" VerticalAlignment="Center"/>
+                </Grid>
+            </Border>
+
+            <!-- Sheets ListBox -->
+            <ListBox Grid.Row="2" 
+                     x:Name="SheetsListBox"
+                     ItemsSource="{Binding FilteredSheets}"
+                     SelectedItem="{Binding SelectedSheet, Mode=TwoWay}"
+                     SelectionChanged="SheetsListBox_SelectionChanged"
+                     ItemContainerStyle="{StaticResource SheetListBoxItemStyle}"
+                     Background="Transparent" BorderThickness="0"
+                     ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+                <ListBox.ItemTemplate>
+                    <DataTemplate>
+                        <Grid>
+                            <Grid.ColumnDefinitions>
+                                <!-- Tab Color Badge -->
+                                <ColumnDefinition Width="Auto"/>
+                                <!-- Sheet Name & Info -->
+                                <ColumnDefinition Width="*"/>
+                                <!-- Sheet Visibility Badge -->
+                                <ColumnDefinition Width="Auto"/>
+                            </Grid.ColumnDefinitions>
+
+                            <!-- Vertical Tab Color Indicator -->
+                            <Border Grid.Column="0" 
+                                    Width="6" Height="24" 
+                                    CornerRadius="3" 
+                                    Margin="0,0,8,0" 
+                                    VerticalAlignment="Center"
+                                    Background="{Binding TabColorHex}"/>
+
+                            <StackPanel Grid.Column="1" VerticalAlignment="Center">
+                                <TextBlock Text="{Binding Name}" FontWeight="Bold" FontSize="12" Foreground="#F8FAFC" TextTrimming="CharacterEllipsis"/>
+                                <TextBlock Text="{Binding SheetType}" FontSize="10" Foreground="#94A3B8"/>
+                            </StackPanel>
+
+                            <!-- Hidden Indicator Badge -->
+                            <Border Grid.Column="2" 
+                                    Background="#EF4444" CornerRadius="4" Padding="4,2" 
+                                    VerticalAlignment="Center"
+                                    Visibility="{Binding IsVisible, Converter={StaticResource BoolToVisConverter}, ConverterParameter=Inverse}">
+                                <TextBlock Text="Hidden" FontSize="9" Foreground="White" FontWeight="Bold"/>
+                            </Border>
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
+        </Grid>
+
+        <!-- FOOTER STATUS BAR -->
+        <Border Grid.Row="4" Background="#1E293B" CornerRadius="6" Padding="8,4" Margin="0,8,0,0">
+            <TextBlock Text="{Binding StatusMessage}" FontSize="10" Foreground="#94A3B8" TextTrimming="CharacterEllipsis"/>
+        </Border>
+    </Grid>
+</UserControl>
