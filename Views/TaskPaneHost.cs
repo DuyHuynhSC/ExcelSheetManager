@@ -1,10 +1,15 @@
+using System;
 using System.Drawing;
+using System.Runtime.InteropServices;
 using System.Windows.Forms;
 using System.Windows.Forms.Integration;
 using ExcelSheetManager.ViewModels;
 
 namespace ExcelSheetManager.Views
 {
+    [ComVisible(true)]
+    [ProgId("ExcelSheetManager.TaskPaneHost")]
+    [Guid("A5F19D34-9B05-4B82-94C3-7E4A8D9183C2")]
     public class TaskPaneHost : System.Windows.Forms.UserControl
     {
         private readonly ElementHost _elementHost;
