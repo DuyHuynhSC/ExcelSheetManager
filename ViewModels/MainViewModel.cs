@@ -112,6 +112,22 @@ namespace ExcelSheetManager.ViewModels
         public ICommand ActivateWorkbookCommand { get; }
         public ICommand ActivateSheetCommand { get; }
 
+        public void SelectWorkbookByName(string wbName)
+        {
+            if (string.IsNullOrEmpty(wbName)) return;
+
+            var match = _allWorkbooks.FirstOrDefault(w => w.Name.Equals(wbName, StringComparison.OrdinalIgnoreCase));
+            if (match != null && SelectedWorkbook?.Name != match.Name)
+            {
+                foreach (var w in _allWorkbooks)
+                {
+                    w.IsActive = (w.Name == match.Name);
+                }
+                OnPropertyChanged(nameof(FilteredWorkbooks));
+                SelectedWorkbook = match;
+            }
+        }
+
         public void RefreshAllData()
         {
             try

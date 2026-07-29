@@ -182,6 +182,35 @@ namespace ExcelSheetManager
             RefreshAllTaskPanes();
         }
 
+        public static void HighlightActiveWorkbookInAllTaskPanes(string wbName)
+        {
+            if (string.IsNullOrEmpty(wbName)) return;
+
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                List<int> deadHwnds = new List<int>();
+                foreach (var kvp in _taskPaneMap)
+                {
+                    if (IsTaskPaneAlive(kvp.Value))
+                    {
+                        if (kvp.Value.ContentControl is TaskPaneHost host && host.ViewModel != null)
+                        {
+                            host.ViewModel.SelectWorkbookByName(wbName);
+                        }
+                    }
+                    else
+                    {
+                        deadHwnds.Add(kvp.Key);
+                    }
+                }
+
+                foreach (var h in deadHwnds)
+                {
+                    _taskPaneMap.Remove(h);
+                }
+            });
+        }
+
         public static void RefreshAllTaskPanes()
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
@@ -231,9 +260,9 @@ namespace ExcelSheetManager
                 {
                     Excel.Window? win = (Wb.Windows != null && Wb.Windows.Count > 0) ? (Excel.Window)Wb.Windows[1] : _excelApp?.ActiveWindow;
                     EnsureTaskPaneForWindow(win, createIfMissing: true);
+                    HighlightActiveWorkbookInAllTaskPanes(Wb.Name);
                 }
                 catch { }
-                RefreshAllTaskPanes();
             });
         }
 
@@ -241,8 +270,12 @@ namespace ExcelSheetManager
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                EnsureTaskPaneForWindow(Wn, createIfMissing: true);
-                RefreshAllTaskPanes();
+                try
+                {
+                    EnsureTaskPaneForWindow(Wn, createIfMissing: true);
+                    HighlightActiveWorkbookInAllTaskPanes(Wb.Name);
+                }
+                catch { }
             });
         }
 
