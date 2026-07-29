@@ -182,6 +182,7 @@ namespace ExcelSheetManager.Views
                 ItemHeight = 44
             };
             _lstWorkbooks.DrawItem += DrawWorkbookItem;
+            _lstWorkbooks.SelectedIndexChanged += LstWorkbooks_SelectedIndexChanged;
             _lstWorkbooks.MouseClick += LstWorkbooks_MouseClick;
 
             _splitContainer.Panel1.Controls.Add(_lstWorkbooks);
@@ -229,6 +230,7 @@ namespace ExcelSheetManager.Views
                 ItemHeight = 40
             };
             _lstSheets.DrawItem += DrawSheetItem;
+            _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
             _lstSheets.MouseClick += LstSheets_MouseClick;
 
             _splitContainer.Panel2.Controls.Add(_lstSheets);
@@ -453,12 +455,27 @@ namespace ExcelSheetManager.Views
             }
         }
 
-        // --- MOUSE CLICK EVENT HANDLERS ---
+        // --- SELECTION & CLICK HANDLERS ---
+        private void LstWorkbooks_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingUi) return;
+            if (_lstWorkbooks.SelectedIndex >= 0 && _lstWorkbooks.SelectedIndex < _lstWorkbooks.Items.Count)
+            {
+                if (_lstWorkbooks.Items[_lstWorkbooks.SelectedIndex] is WorkbookItem item)
+                {
+                    _selectedWorkbook = item;
+                    _lstWorkbooks.Invalidate();
+                    LoadSheetsForWorkbook(item);
+                    ActivateWorkbookInExcel(item);
+                }
+            }
+        }
+
         private void LstWorkbooks_MouseClick(object? sender, MouseEventArgs e)
         {
             if (_isUpdatingUi) return;
             int idx = _lstWorkbooks.IndexFromPoint(e.Location);
-            if (idx >= 0 && _lstWorkbooks.Items[idx] is WorkbookItem item)
+            if (idx >= 0 && idx < _lstWorkbooks.Items.Count && _lstWorkbooks.Items[idx] is WorkbookItem item)
             {
                 _isUpdatingUi = true;
                 _lstWorkbooks.SelectedIndex = idx;
@@ -471,11 +488,24 @@ namespace ExcelSheetManager.Views
             }
         }
 
+        private void LstSheets_SelectedIndexChanged(object? sender, EventArgs e)
+        {
+            if (_isUpdatingUi) return;
+            if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+            {
+                if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem item)
+                {
+                    _lstSheets.Invalidate();
+                    ActivateSheetInExcel(item);
+                }
+            }
+        }
+
         private void LstSheets_MouseClick(object? sender, MouseEventArgs e)
         {
             if (_isUpdatingUi) return;
             int idx = _lstSheets.IndexFromPoint(e.Location);
-            if (idx >= 0 && _lstSheets.Items[idx] is SheetItem item)
+            if (idx >= 0 && idx < _lstSheets.Items.Count && _lstSheets.Items[idx] is SheetItem item)
             {
                 _lstSheets.SelectedIndex = idx;
                 _lstSheets.Invalidate();
@@ -539,7 +569,8 @@ namespace ExcelSheetManager.Views
             if (e.Index < 0 || e.Index >= _lstWorkbooks.Items.Count) return;
             var item = (WorkbookItem)_lstWorkbooks.Items[e.Index];
 
-            bool isSelected = (e.Index == _lstWorkbooks.SelectedIndex) || ((e.State & DrawItemState.Selected) == DrawItemState.Selected);
+            bool isSelected = (e.Index == _lstWorkbooks.SelectedIndex) ||
+                             (_selectedWorkbook != null && item.Name.Equals(_selectedWorkbook.Name, StringComparison.OrdinalIgnoreCase));
             Color itemBg = isSelected ? _selectColor : _cardColor;
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -582,7 +613,7 @@ namespace ExcelSheetManager.Views
             if (e.Index < 0 || e.Index >= _lstSheets.Items.Count) return;
             var item = (SheetItem)_lstSheets.Items[e.Index];
 
-            bool isSelected = (e.Index == _lstSheets.SelectedIndex) || ((e.State & DrawItemState.Selected) == DrawItemState.Selected);
+            bool isSelected = (e.Index == _lstSheets.SelectedIndex);
             Color itemBg = isSelected ? Color.FromArgb(79, 70, 229) : _cardColor; // Indigo 600 if selected
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
