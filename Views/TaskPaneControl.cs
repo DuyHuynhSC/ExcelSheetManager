@@ -91,9 +91,10 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Orientation = Orientation.Horizontal,
-                SplitterDistance = 250,
-                SplitterWidth = 6,
-                BackColor = _bgColor
+                SplitterWidth = 8,
+                Panel1MinSize = 80,
+                Panel2MinSize = 80,
+                BackColor = Color.FromArgb(51, 65, 85) // Slate 700 visible draggable splitter bar
             };
 
             // --- VÙNG 1: OPEN FILES ---
@@ -142,6 +143,7 @@ namespace ExcelSheetManager.Views
 
             _splitContainer.Panel1.Controls.Add(_lstWorkbooks);
             _splitContainer.Panel1.Controls.Add(_pnlVung1Header);
+            _splitContainer.Panel1.BackColor = _bgColor;
 
             // --- VÙNG 2: SHEETS LIST ---
             _pnlVung2Header = new Panel
@@ -189,6 +191,7 @@ namespace ExcelSheetManager.Views
 
             _splitContainer.Panel2.Controls.Add(_lstSheets);
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
+            _splitContainer.Panel2.BackColor = _bgColor;
 
             // ADD ALL TO CONTROL
             this.Controls.Add(_splitContainer);
@@ -200,7 +203,25 @@ namespace ExcelSheetManager.Views
         protected override void OnLoad(EventArgs e)
         {
             base.OnLoad(e);
+            SetEqualSplitterDistance();
             RefreshData();
+        }
+
+        private void SetEqualSplitterDistance()
+        {
+            try
+            {
+                if (_splitContainer != null && this.Height > 160)
+                {
+                    int availableHeight = this.Height - (_lblStatus?.Height ?? 24);
+                    int half = availableHeight / 2;
+                    if (half >= _splitContainer.Panel1MinSize && half <= availableHeight - _splitContainer.Panel2MinSize)
+                    {
+                        _splitContainer.SplitterDistance = half;
+                    }
+                }
+            }
+            catch { }
         }
 
         public void SelectWorkbookByName(string wbName)
