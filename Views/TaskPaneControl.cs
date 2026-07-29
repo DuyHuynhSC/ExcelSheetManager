@@ -77,7 +77,7 @@ namespace ExcelSheetManager.Views
         {
             this.SuspendLayout();
 
-            // 1. HEADER TOOLBAR PANEL
+            // 1. HEADER TOOLBAR PANEL (DOCK TOP)
             _pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
@@ -113,7 +113,7 @@ namespace ExcelSheetManager.Views
             _pnlHeader.Controls.Add(_lblTitle);
             _pnlHeader.Controls.Add(_btnRefresh);
 
-            // 2. STATUS LABEL (FOOTER)
+            // 2. STATUS LABEL (FOOTER - DOCK BOTTOM)
             _lblStatus = new Label
             {
                 Dock = DockStyle.Bottom,
@@ -126,7 +126,7 @@ namespace ExcelSheetManager.Views
                 Text = "Ready"
             };
 
-            // 3. SPLIT CONTAINER (VÙNG 1 & VÙNG 2)
+            // 3. SPLIT CONTAINER (VÙNG 1 & VÙNG 2 - DOCK FILL)
             _splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
@@ -233,10 +233,14 @@ namespace ExcelSheetManager.Views
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
             _splitContainer.Panel2.BackColor = _bgColor;
 
-            // ADD ALL TO CONTROL (Header panel + SplitContainer + Footer Status)
+            // ADD CONTROLS WITH CORRECT WINFORMS DOCKING Z-ORDER
             this.Controls.Add(_splitContainer);
-            this.Controls.Add(_pnlHeader);
             this.Controls.Add(_lblStatus);
+            this.Controls.Add(_pnlHeader);
+
+            _pnlHeader.BringToFront();
+            _lblStatus.SendToBack();
+            _splitContainer.SendToBack();
 
             this.ResumeLayout(false);
         }
