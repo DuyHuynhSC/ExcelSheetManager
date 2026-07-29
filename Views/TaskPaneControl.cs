@@ -30,12 +30,15 @@ namespace ExcelSheetManager.Views
 
         public string BoundWorkbookName { get; set; } = string.Empty;
 
-        // UI Colors
-        private readonly Color _bgColor = Color.FromArgb(15, 23, 42);      // Slate 900 #0F172A
-        private readonly Color _cardColor = Color.FromArgb(30, 41, 59);    // Slate 800 #1E293B
-        private readonly Color _selectColor = Color.FromArgb(2, 132, 199);  // Sky 600 #0284C7
-        private readonly Color _textColor = Color.FromArgb(248, 250, 252);  // Slate 50 #F8FAFC
-        private readonly Color _subTextColor = Color.FromArgb(148, 163, 184);// Slate 400 #94A3B8
+        // Theme Flag & Colors
+        private bool _isDarkTheme = true;
+
+        private Color _bgColor;
+        private Color _cardColor;
+        private Color _selectColor;
+        private Color _textColor;
+        private Color _subTextColor;
+        private Color _splitterColor;
 
         // Layout Containers
         private TableLayoutPanel _mainTable = null!;
@@ -46,6 +49,7 @@ namespace ExcelSheetManager.Views
         private Panel _pnlHeader = null!;
         private Label _lblTitle = null!;
         private Button _btnRefresh = null!;
+        private Button _btnTheme = null!;
 
         private SplitContainer _splitContainer = null!;
 
@@ -71,11 +75,12 @@ namespace ExcelSheetManager.Views
         {
             this.Size = new Size(340, 600);
             this.MinimumSize = new Size(200, 300);
-            this.BackColor = _bgColor;
-            this.ForeColor = _textColor;
             this.Font = new Font("Segoe UI", 9.5f, FontStyle.Regular);
 
+            _isDarkTheme = SettingsHelper.GetIsDarkTheme(defaultValue: true);
+
             InitializeComponent();
+            ApplyTheme();
         }
 
         private void InitializeComponent()
@@ -89,8 +94,7 @@ namespace ExcelSheetManager.Views
                 ColumnCount = 1,
                 RowCount = 3,
                 Margin = new Padding(0),
-                Padding = new Padding(0),
-                BackColor = _bgColor
+                Padding = new Padding(0)
             };
             _mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             _mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f)); // Row 0: Header
@@ -102,14 +106,14 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                BackColor = _cardColor,
-                Padding = new Padding(8, 4, 8, 4)
+                Padding = new Padding(6, 4, 6, 4)
             };
 
+            // Refresh Button (Far Right)
             _btnRefresh = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 80,
+                Width = 68,
                 Text = "Refresh",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -120,10 +124,23 @@ namespace ExcelSheetManager.Views
             _btnRefresh.FlatAppearance.BorderSize = 0;
             _btnRefresh.Click += (s, e) => RefreshData();
 
+            // Theme Toggle Button (Next to Refresh)
+            _btnTheme = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 68,
+                Text = _isDarkTheme ? "☀️ Light" : "🌙 Dark",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnTheme.FlatAppearance.BorderSize = 0;
+            _btnTheme.Click += (s, e) => ToggleTheme();
+
             _lblTitle = new Label
             {
                 Dock = DockStyle.Left,
-                Width = 155,
+                Width = 145,
                 BackColor = Color.Transparent
             };
 
@@ -156,14 +173,16 @@ namespace ExcelSheetManager.Views
                     pe.Graphics.FillRectangle(b4, 22, 6, 4, 20);
                 }
 
-                // Draw NAVIGATION Text in Crisp White
+                // Draw NAVIGATION Text
+                Color titleColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42);
                 using (var font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
                 {
-                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(32, 6), Color.FromArgb(248, 250, 252));
+                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(30, 6), titleColor);
                 }
             };
 
             _pnlHeader.Controls.Add(_btnRefresh);
+            _pnlHeader.Controls.Add(_btnTheme);
             _pnlHeader.Controls.Add(_lblTitle);
             _mainTable.Controls.Add(_pnlHeader, 0, 0);
 
@@ -172,8 +191,6 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                BackColor = _cardColor,
-                ForeColor = _subTextColor,
                 Font = new Font("Segoe UI", 8.5f),
                 TextAlign = ContentAlignment.MiddleLeft,
                 Padding = new Padding(8, 0, 0, 0),
@@ -189,8 +206,7 @@ namespace ExcelSheetManager.Views
                 SplitterWidth = 8,
                 Panel1MinSize = 80,
                 Panel2MinSize = 80,
-                Margin = new Padding(0),
-                BackColor = Color.FromArgb(51, 65, 85) // Slate 700 visible draggable splitter bar
+                Margin = new Padding(0)
             };
 
             // --- VÙNG 1: TABLE LAYOUT (ROW 0: HEADER 55px, ROW 1: LISTBOX 100%) ---
@@ -200,8 +216,7 @@ namespace ExcelSheetManager.Views
                 ColumnCount = 1,
                 RowCount = 2,
                 Margin = new Padding(0),
-                Padding = new Padding(0),
-                BackColor = _bgColor
+                Padding = new Padding(0)
             };
             _tblVung1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));
@@ -211,7 +226,6 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                BackColor = _bgColor,
                 Padding = new Padding(6, 4, 6, 4)
             };
 
@@ -227,8 +241,6 @@ namespace ExcelSheetManager.Views
             _txtFilterFile = new TextBox
             {
                 Dock = DockStyle.Bottom,
-                BackColor = _cardColor,
-                ForeColor = _textColor,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9f),
                 Text = ""
@@ -242,8 +254,6 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                BackColor = _bgColor,
-                ForeColor = _textColor,
                 BorderStyle = BorderStyle.None,
                 DrawMode = DrawMode.OwnerDrawFixed,
                 ItemHeight = 36
@@ -262,8 +272,7 @@ namespace ExcelSheetManager.Views
                 ColumnCount = 1,
                 RowCount = 2,
                 Margin = new Padding(0),
-                Padding = new Padding(0),
-                BackColor = _bgColor
+                Padding = new Padding(0)
             };
             _tblVung2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
             _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));
@@ -273,7 +282,6 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                BackColor = _bgColor,
                 Padding = new Padding(6, 4, 6, 4)
             };
 
@@ -289,8 +297,6 @@ namespace ExcelSheetManager.Views
             _txtFilterSheet = new TextBox
             {
                 Dock = DockStyle.Bottom,
-                BackColor = _cardColor,
-                ForeColor = _textColor,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9f),
                 Text = ""
@@ -304,8 +310,6 @@ namespace ExcelSheetManager.Views
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                BackColor = _bgColor,
-                ForeColor = _textColor,
                 BorderStyle = BorderStyle.None,
                 DrawMode = DrawMode.OwnerDrawFixed,
                 ItemHeight = 36
@@ -323,6 +327,56 @@ namespace ExcelSheetManager.Views
             this.Controls.Add(_mainTable);
 
             this.ResumeLayout(false);
+        }
+
+        private void ToggleTheme()
+        {
+            _isDarkTheme = !_isDarkTheme;
+            SettingsHelper.SetIsDarkTheme(_isDarkTheme);
+            ApplyTheme();
+        }
+
+        private void ApplyTheme()
+        {
+            _bgColor = _isDarkTheme ? Color.FromArgb(15, 23, 42) : Color.FromArgb(241, 245, 249);
+            _cardColor = _isDarkTheme ? Color.FromArgb(30, 41, 59) : Color.FromArgb(255, 255, 255);
+            _selectColor = Color.FromArgb(2, 132, 199);
+            _textColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42);
+            _subTextColor = _isDarkTheme ? Color.FromArgb(148, 163, 184) : Color.FromArgb(100, 116, 139);
+            _splitterColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(203, 213, 225);
+
+            this.BackColor = _bgColor;
+            this.ForeColor = _textColor;
+
+            _mainTable.BackColor = _bgColor;
+            _pnlHeader.BackColor = _cardColor;
+
+            _btnTheme.Text = _isDarkTheme ? "☀️ Light" : "🌙 Dark";
+            _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
+            _btnTheme.ForeColor = _isDarkTheme ? Color.White : Color.FromArgb(15, 23, 42);
+
+            _lblStatus.BackColor = _cardColor;
+            _lblStatus.ForeColor = _subTextColor;
+
+            _splitContainer.BackColor = _splitterColor;
+
+            _tblVung1.BackColor = _bgColor;
+            _pnlVung1Header.BackColor = _bgColor;
+            _txtFilterFile.BackColor = _cardColor;
+            _txtFilterFile.ForeColor = _textColor;
+            _lstWorkbooks.BackColor = _bgColor;
+            _lstWorkbooks.ForeColor = _textColor;
+
+            _tblVung2.BackColor = _bgColor;
+            _pnlVung2Header.BackColor = _bgColor;
+            _txtFilterSheet.BackColor = _cardColor;
+            _txtFilterSheet.ForeColor = _textColor;
+            _lstSheets.BackColor = _bgColor;
+            _lstSheets.ForeColor = _textColor;
+
+            _lstWorkbooks.Invalidate();
+            _lstSheets.Invalidate();
+            _lblTitle.Invalidate();
         }
 
         protected override void OnLoad(EventArgs e)
@@ -713,7 +767,9 @@ namespace ExcelSheetManager.Views
 
             bool isSelected = (e.Index == _lstWorkbooks.SelectedIndex) ||
                              (_selectedWorkbook != null && item.Name.Equals(_selectedWorkbook.Name, StringComparison.OrdinalIgnoreCase));
+            
             Color itemBg = isSelected ? _selectColor : _cardColor;
+            Color itemText = isSelected ? Color.White : _textColor;
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
@@ -724,13 +780,13 @@ namespace ExcelSheetManager.Views
             }
 
             // Draw Icon
-            TextRenderer.DrawText(e.Graphics, "📄", new Font("Segoe UI", 10.5f), new Point(e.Bounds.X + 6, e.Bounds.Y + 7), _textColor);
+            TextRenderer.DrawText(e.Graphics, "📄", new Font("Segoe UI", 10.5f), new Point(e.Bounds.X + 6, e.Bounds.Y + 7), itemText);
 
             // Draw File Name across full width with EndEllipsis
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
                 Rectangle nameRect = new Rectangle(e.Bounds.X + 30, e.Bounds.Y + 4, e.Bounds.Width - 36, e.Bounds.Height - 8);
-                TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, _textColor, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
+                TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, itemText, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             }
         }
 
