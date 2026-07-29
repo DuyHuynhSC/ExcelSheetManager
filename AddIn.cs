@@ -113,7 +113,9 @@ namespace ExcelSheetManager
                     // Create CustomTaskPane specifically bound to targetWin
                     CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager", targetWin);
                     
-                    // Make visible FIRST, then set DockPosition to Right and set width to ensure native Excel docking panel layout
+                    // Enforce Right side panel docking both before and after Visible
+                    ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                    ctp.Width = 340;
                     ctp.Visible = true;
                     ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
                     ctp.Width = 340;

@@ -18,7 +18,8 @@ namespace ExcelSheetManager.Views
 
         public TaskPaneHost()
         {
-            // Keep constructor empty and lightweight for ActiveX CoCreateInstance in Office 365/2024
+            this.Size = new Size(340, 600);
+            this.MinimumSize = new Size(200, 300);
             this.BackColor = Color.FromArgb(15, 23, 42);
         }
 
