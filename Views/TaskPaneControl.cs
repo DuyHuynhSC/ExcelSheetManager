@@ -18,6 +18,10 @@ namespace ExcelSheetManager.Views
     [Guid("A5F19D34-9B05-4B82-94C3-7E4A8D9183C2")]
     public class TaskPaneControl : UserControl
     {
+        [DllImport("user32.dll")]
+        private static extern IntPtr SendMessage(IntPtr hWnd, int msg, bool wParam, int lParam);
+        private const int WM_SETREDRAW = 0x000B;
+
         // UI Colors
         private readonly Color _bgColor = Color.FromArgb(15, 23, 42);      // Slate 900 #0F172A
         private readonly Color _cardColor = Color.FromArgb(30, 41, 59);    // Slate 800 #1E293B
@@ -322,37 +326,57 @@ namespace ExcelSheetManager.Views
 
         private void FilterWorkbooksList()
         {
-            _lstWorkbooks.BeginUpdate();
-            _lstWorkbooks.Items.Clear();
-
-            string filter = _txtFilterFile.Text.Trim();
-            var matches = string.IsNullOrEmpty(filter)
-                ? _allWorkbooks
-                : _allWorkbooks.Where(w => w.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
-                                           w.FullPath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
-
-            foreach (var item in matches)
+            if (_lstWorkbooks.IsHandleCreated)
             {
-                _lstWorkbooks.Items.Add(item);
+                SendMessage(_lstWorkbooks.Handle, WM_SETREDRAW, false, 0);
             }
-            _lstWorkbooks.EndUpdate();
+
+            try
+            {
+                _lstWorkbooks.BeginUpdate();
+                _lstWorkbooks.Items.Clear();
+
+                string filter = _txtFilterFile.Text.Trim();
+                var matches = string.IsNullOrEmpty(filter)
+                    ? _allWorkbooks
+                    : _allWorkbooks.Where(w => w.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0 ||
+                                               w.FullPath.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                foreach (var item in matches)
+                {
+                    _lstWorkbooks.Items.Add(item);
+                }
+            }
+            finally
+            {
+                _lstWorkbooks.EndUpdate();
+                if (_lstWorkbooks.IsHandleCreated)
+                {
+                    SendMessage(_lstWorkbooks.Handle, WM_SETREDRAW, true, 0);
+                    _lstWorkbooks.Invalidate();
+                }
+            }
         }
 
         private void LoadSheetsForWorkbook(WorkbookItem? wbItem)
         {
             _allSheets.Clear();
-            _lstSheets.BeginUpdate();
-            _lstSheets.Items.Clear();
-
-            if (wbItem == null || wbItem.WorkbookRef is not Excel.Workbook wb)
+            if (_lstSheets.IsHandleCreated)
             {
-                _lblVung2Title.Text = "📋 SHEETS (0)";
-                _lstSheets.EndUpdate();
-                return;
+                SendMessage(_lstSheets.Handle, WM_SETREDRAW, false, 0);
             }
 
             try
             {
+                _lstSheets.BeginUpdate();
+                _lstSheets.Items.Clear();
+
+                if (wbItem == null || wbItem.WorkbookRef is not Excel.Workbook wb)
+                {
+                    _lblVung2Title.Text = "📋 SHEETS (0)";
+                    return;
+                }
+
                 Excel.Sheets sheets = wb.Sheets;
                 object activeSheetObj = wb.ActiveSheet;
                 string activeSheetName = (activeSheetObj is Excel.Worksheet wsActive) ? wsActive.Name : string.Empty;
@@ -397,24 +421,48 @@ namespace ExcelSheetManager.Views
             {
                 _lblStatus.Text = $"Load sheets error: {ex.Message}";
             }
-            _lstSheets.EndUpdate();
+            finally
+            {
+                _lstSheets.EndUpdate();
+                if (_lstSheets.IsHandleCreated)
+                {
+                    SendMessage(_lstSheets.Handle, WM_SETREDRAW, true, 0);
+                    _lstSheets.Invalidate();
+                }
+            }
         }
 
         private void FilterSheetsList()
         {
-            _lstSheets.BeginUpdate();
-            _lstSheets.Items.Clear();
-
-            string filter = _txtFilterSheet.Text.Trim();
-            var matches = string.IsNullOrEmpty(filter)
-                ? _allSheets
-                : _allSheets.Where(s => s.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
-
-            foreach (var item in matches)
+            if (_lstSheets.IsHandleCreated)
             {
-                _lstSheets.Items.Add(item);
+                SendMessage(_lstSheets.Handle, WM_SETREDRAW, false, 0);
             }
-            _lstSheets.EndUpdate();
+
+            try
+            {
+                _lstSheets.BeginUpdate();
+                _lstSheets.Items.Clear();
+
+                string filter = _txtFilterSheet.Text.Trim();
+                var matches = string.IsNullOrEmpty(filter)
+                    ? _allSheets
+                    : _allSheets.Where(s => s.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
+
+                foreach (var item in matches)
+                {
+                    _lstSheets.Items.Add(item);
+                }
+            }
+            finally
+            {
+                _lstSheets.EndUpdate();
+                if (_lstSheets.IsHandleCreated)
+                {
+                    SendMessage(_lstSheets.Handle, WM_SETREDRAW, true, 0);
+                    _lstSheets.Invalidate();
+                }
+            }
         }
 
         // --- MOUSE CLICK EVENT HANDLERS ---

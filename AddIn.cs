@@ -19,16 +19,8 @@ namespace ExcelSheetManager
             try
             {
                 _excelApp = (Excel.Application)ExcelDnaUtil.Application;
-                if (_excelApp != null)
-                {
-                    // Register ONLY structural lifecycle events (WorkbookOpen, WorkbookBeforeClose, WorkbookNewSheet)
-                    // DO NOT register WindowActivate/WorkbookActivate to prevent any COM latency during window navigation
-                    _excelApp.WorkbookOpen += ExcelApp_WorkbookOpen;
-                    _excelApp.WorkbookBeforeClose += ExcelApp_WorkbookBeforeClose;
-                    _excelApp.WorkbookNewSheet += ExcelApp_WorkbookNewSheet;
-                }
 
-                // Initialize taskpane for active window
+                // Initialize taskpane for active window on startup
                 ExcelAsyncUtil.QueueAsMacro(() =>
                 {
                     EnsureTaskPaneForWindow(_excelApp?.ActiveWindow, createIfMissing: true);
@@ -44,14 +36,7 @@ namespace ExcelSheetManager
         {
             try
             {
-                if (_excelApp != null)
-                {
-                    _excelApp.WorkbookOpen -= ExcelApp_WorkbookOpen;
-                    _excelApp.WorkbookBeforeClose -= ExcelApp_WorkbookBeforeClose;
-                    _excelApp.WorkbookNewSheet -= ExcelApp_WorkbookNewSheet;
-                    _excelApp = null;
-                }
-
+                _excelApp = null;
                 foreach (var ctp in _taskPaneMap.Values)
                 {
                     try { ctp.Visible = false; ctp.Delete(); } catch { }
@@ -154,17 +139,20 @@ namespace ExcelSheetManager
                     if (_taskPaneMap.TryGetValue(hwnd, out var ctp) && IsTaskPaneAlive(ctp))
                     {
                         ctp.Visible = !ctp.Visible;
-                        if (ctp.Visible)
+                        if (ctp.Visible && ctp.ContentControl is TaskPaneControl control)
                         {
                             ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
                             ctp.Width = 340;
-                            RefreshAllTaskPanes();
+                            control.RefreshData();
                         }
                     }
                     else
                     {
-                        EnsureTaskPaneForWindow(activeWin, createIfMissing: true);
-                        RefreshAllTaskPanes();
+                        var newCtp = EnsureTaskPaneForWindow(activeWin, createIfMissing: true);
+                        if (newCtp?.ContentControl is TaskPaneControl control)
+                        {
+                            control.RefreshData();
+                        }
                     }
                 }
                 catch (Exception ex)
@@ -176,63 +164,25 @@ namespace ExcelSheetManager
 
         public static void RefreshTaskPane()
         {
-            RefreshAllTaskPanes();
-        }
-
-        public static void RefreshAllTaskPanes()
-        {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                List<int> deadHwnds = new List<int>();
-                foreach (var kvp in _taskPaneMap)
+                if (_excelApp == null) _excelApp = (Excel.Application)ExcelDnaUtil.Application;
+                Excel.Window? activeWin = _excelApp?.ActiveWindow;
+                if (activeWin != null && _taskPaneMap.TryGetValue(activeWin.Hwnd, out var ctp) && IsTaskPaneAlive(ctp))
                 {
-                    if (IsTaskPaneAlive(kvp.Value))
+                    if (ctp.ContentControl is TaskPaneControl control)
                     {
-                        if (kvp.Value.ContentControl is TaskPaneControl control)
-                        {
-                            control.RefreshData();
-                        }
-                    }
-                    else
-                    {
-                        deadHwnds.Add(kvp.Key);
+                        control.RefreshData();
                     }
                 }
-
-                foreach (var h in deadHwnds)
+                else
                 {
-                    _taskPaneMap.Remove(h);
+                    var newCtp = EnsureTaskPaneForWindow(activeWin, createIfMissing: true);
+                    if (newCtp?.ContentControl is TaskPaneControl control)
+                    {
+                        control.RefreshData();
+                    }
                 }
-            });
-        }
-
-        private void ExcelApp_WorkbookOpen(Excel.Workbook Wb)
-        {
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                try
-                {
-                    Excel.Window? win = (Wb.Windows != null && Wb.Windows.Count > 0) ? (Excel.Window)Wb.Windows[1] : _excelApp?.ActiveWindow;
-                    EnsureTaskPaneForWindow(win, createIfMissing: true);
-                }
-                catch { }
-                RefreshAllTaskPanes();
-            });
-        }
-
-        private void ExcelApp_WorkbookBeforeClose(Excel.Workbook Wb, ref bool Cancel)
-        {
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                RefreshAllTaskPanes();
-            });
-        }
-
-        private void ExcelApp_WorkbookNewSheet(Excel.Workbook Wb, object Sh)
-        {
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                RefreshAllTaskPanes();
             });
         }
     }
