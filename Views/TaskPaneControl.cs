@@ -81,15 +81,15 @@ namespace ExcelSheetManager.Views
             _pnlHeader = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 36,
+                Height = 38,
                 BackColor = _cardColor,
-                Padding = new Padding(6, 4, 6, 4)
+                Padding = new Padding(8, 4, 8, 4)
             };
 
             _btnRefresh = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 85,
+                Width = 80,
                 Text = "Refresh",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -102,16 +102,18 @@ namespace ExcelSheetManager.Views
 
             _lblTitle = new Label
             {
-                Dock = DockStyle.Fill,
-                Text = "NAVIGATOR",
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                Text = "NAVIGATION",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 TextAlign = ContentAlignment.MiddleLeft,
-                Padding = new Padding(4, 0, 0, 0)
+                Padding = new Padding(0, 4, 0, 0)
             };
 
-            _pnlHeader.Controls.Add(_lblTitle);
+            // ADD REFRESH BUTTON FIRST (DOCK RIGHT), THEN TITLE (DOCK LEFT)
             _pnlHeader.Controls.Add(_btnRefresh);
+            _pnlHeader.Controls.Add(_lblTitle);
 
             // 2. STATUS LABEL (FOOTER - DOCK BOTTOM)
             _lblStatus = new Label
@@ -148,7 +150,7 @@ namespace ExcelSheetManager.Views
 
             _lblVung1Title = new Label
             {
-                Text = "📁 OPEN FILES",
+                Text = "OPEN FILES",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
                 Dock = DockStyle.Top,
@@ -196,7 +198,7 @@ namespace ExcelSheetManager.Views
 
             _lblVung2Title = new Label
             {
-                Text = "📋 SHEETS",
+                Text = "SHEETS",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(129, 140, 248),
                 Dock = DockStyle.Top,
@@ -233,7 +235,7 @@ namespace ExcelSheetManager.Views
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
             _splitContainer.Panel2.BackColor = _bgColor;
 
-            // ADD CONTROLS WITH DOCKING Z-ORDER
+            // ADD CONTROLS WITH CORRECT WINFORMS DOCKING Z-ORDER
             this.Controls.Add(_splitContainer);
             this.Controls.Add(_lblStatus);
             this.Controls.Add(_pnlHeader);
@@ -258,7 +260,7 @@ namespace ExcelSheetManager.Views
             {
                 if (_splitContainer != null && this.Height > 160)
                 {
-                    int availableHeight = this.Height - (_pnlHeader?.Height ?? 36) - (_lblStatus?.Height ?? 24);
+                    int availableHeight = this.Height - (_pnlHeader?.Height ?? 38) - (_lblStatus?.Height ?? 24);
                     int half = availableHeight / 2;
                     if (half >= _splitContainer.Panel1MinSize && half <= availableHeight - _splitContainer.Panel2MinSize)
                     {
@@ -319,7 +321,7 @@ namespace ExcelSheetManager.Views
                     catch { }
                 }
 
-                _lblVung1Title.Text = $"📁 OPEN FILES ({_allWorkbooks.Count})";
+                _lblVung1Title.Text = $"OPEN FILES ({_allWorkbooks.Count})";
                 FilterWorkbooksList();
 
                 // Select current bound/active workbook
@@ -411,7 +413,7 @@ namespace ExcelSheetManager.Views
 
                 if (wbItem == null || wbItem.WorkbookRef is not Excel.Workbook wb)
                 {
-                    _lblVung2Title.Text = "📋 SHEETS";
+                    _lblVung2Title.Text = "SHEETS";
                     return;
                 }
 
@@ -452,7 +454,7 @@ namespace ExcelSheetManager.Views
                     }
                 }
 
-                _lblVung2Title.Text = $"📋 SHEETS ({_allSheets.Count})";
+                _lblVung2Title.Text = $"SHEETS ({_allSheets.Count})";
                 FilterSheetsList();
             }
             catch (Exception ex)
