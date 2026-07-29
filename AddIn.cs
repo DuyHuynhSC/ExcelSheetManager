@@ -108,8 +108,8 @@ namespace ExcelSheetManager
 
                 if (createIfMissing)
                 {
-                    // Create CustomTaskPane specifically bound to targetWin
-                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager", targetWin);
+                    // Create CustomTaskPane using pure WinForms TaskPaneControl directly bound to targetWin
+                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneControl), "Sheet & File Manager", targetWin);
                     
                     // Enforce Right side panel docking both before and after Visible
                     ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
@@ -193,9 +193,9 @@ namespace ExcelSheetManager
                 {
                     if (IsTaskPaneAlive(kvp.Value))
                     {
-                        if (kvp.Value.ContentControl is TaskPaneHost host && host.ViewModel != null)
+                        if (kvp.Value.ContentControl is TaskPaneControl control)
                         {
-                            host.ViewModel.SelectWorkbookByName(wbName);
+                            control.HighlightWorkbookByName(wbName);
                         }
                     }
                     else
@@ -220,9 +220,9 @@ namespace ExcelSheetManager
                 {
                     if (IsTaskPaneAlive(kvp.Value))
                     {
-                        if (kvp.Value.ContentControl is TaskPaneHost host && host.ViewModel != null)
+                        if (kvp.Value.ContentControl is TaskPaneControl control)
                         {
-                            host.ViewModel.RefreshAllData();
+                            control.RefreshData();
                         }
                     }
                     else
