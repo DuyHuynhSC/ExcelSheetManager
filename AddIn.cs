@@ -144,6 +144,26 @@ namespace ExcelSheetManager
             }
         }
 
+        public static void SyncSelectedWorkbookInAllTaskPanes(string wbName)
+        {
+            if (string.IsNullOrEmpty(wbName)) return;
+
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                foreach (var kvp in _taskPaneMap)
+                {
+                    try
+                    {
+                        if (IsTaskPaneAlive(kvp.Value) && kvp.Value.ContentControl is TaskPaneControl control)
+                        {
+                            control.SelectWorkbookByName(wbName);
+                        }
+                    }
+                    catch { }
+                }
+            });
+        }
+
         public static void ToggleTaskPane()
         {
             ExcelAsyncUtil.QueueAsMacro(() =>

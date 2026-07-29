@@ -26,8 +26,7 @@ namespace ExcelSheetManager.Views
         private static extern bool SetForegroundWindow(IntPtr hWnd);
 
         [DllImport("user32.dll")]
-        private static extern bool ShowWindowAsync(IntPtr hWnd, int nCmdShow);
-        private const int SW_RESTORE = 9;
+        private static extern bool BringWindowToTop(IntPtr hWnd);
 
         public string BoundWorkbookName { get; set; } = string.Empty;
 
@@ -255,6 +254,19 @@ namespace ExcelSheetManager.Views
         {
             base.OnLoad(e);
             RefreshData();
+        }
+
+        public void SelectWorkbookByName(string wbName)
+        {
+            if (string.IsNullOrEmpty(wbName)) return;
+
+            var match = _allWorkbooks.FirstOrDefault(w => w.Name.Equals(wbName, StringComparison.OrdinalIgnoreCase));
+            if (match != null)
+            {
+                _isUpdatingUi = true;
+                SelectWorkbookItemInList(match);
+                _isUpdatingUi = false;
+            }
         }
 
         public void RefreshData()
@@ -522,13 +534,22 @@ namespace ExcelSheetManager.Views
                 {
                     Excel.Window win = (Excel.Window)wb.Windows[1];
                     win.Activate();
+
                     IntPtr hwnd = new IntPtr(win.Hwnd);
                     if (hwnd != IntPtr.Zero)
                     {
-                        ShowWindowAsync(hwnd, SW_RESTORE);
-                        SetForegroundWindow(hwnd);
+                        try
+                        {
+                            BringWindowToTop(hwnd);
+                            SetForegroundWindow(hwnd);
+                        }
+                        catch { }
                     }
                 }
+
+                // Synchronize selection across all TaskPanes so File Tháng 06's TaskPane highlights File Tháng 06!
+                AddIn.SyncSelectedWorkbookInAllTaskPanes(item.Name);
+
                 _lblStatus.Text = $"Activated file: {item.Name}";
             }
             catch (Exception ex)
@@ -553,8 +574,12 @@ namespace ExcelSheetManager.Views
                         IntPtr hwnd = new IntPtr(win.Hwnd);
                         if (hwnd != IntPtr.Zero)
                         {
-                            ShowWindowAsync(hwnd, SW_RESTORE);
-                            SetForegroundWindow(hwnd);
+                            try
+                            {
+                                BringWindowToTop(hwnd);
+                                SetForegroundWindow(hwnd);
+                            }
+                            catch { }
                         }
                     }
                     ws.Activate();
@@ -570,8 +595,12 @@ namespace ExcelSheetManager.Views
                         IntPtr hwnd = new IntPtr(win.Hwnd);
                         if (hwnd != IntPtr.Zero)
                         {
-                            ShowWindowAsync(hwnd, SW_RESTORE);
-                            SetForegroundWindow(hwnd);
+                            try
+                            {
+                                BringWindowToTop(hwnd);
+                                SetForegroundWindow(hwnd);
+                            }
+                            catch { }
                         }
                     }
                     chart.Activate();
