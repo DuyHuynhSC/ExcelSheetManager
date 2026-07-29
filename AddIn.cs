@@ -21,11 +21,10 @@ namespace ExcelSheetManager
                 _excelApp = (Excel.Application)ExcelDnaUtil.Application;
                 if (_excelApp != null)
                 {
-                    // Register Excel Application Event Listeners for Structural Workbook Changes
+                    // Register ONLY structural lifecycle events (WorkbookOpen, WorkbookBeforeClose, WorkbookNewSheet)
+                    // DO NOT register WindowActivate/WorkbookActivate to prevent any COM latency during window navigation
                     _excelApp.WorkbookOpen += ExcelApp_WorkbookOpen;
                     _excelApp.WorkbookBeforeClose += ExcelApp_WorkbookBeforeClose;
-                    _excelApp.WorkbookActivate += ExcelApp_WorkbookActivate;
-                    _excelApp.WindowActivate += ExcelApp_WindowActivate;
                     _excelApp.WorkbookNewSheet += ExcelApp_WorkbookNewSheet;
                 }
 
@@ -49,8 +48,6 @@ namespace ExcelSheetManager
                 {
                     _excelApp.WorkbookOpen -= ExcelApp_WorkbookOpen;
                     _excelApp.WorkbookBeforeClose -= ExcelApp_WorkbookBeforeClose;
-                    _excelApp.WorkbookActivate -= ExcelApp_WorkbookActivate;
-                    _excelApp.WindowActivate -= ExcelApp_WindowActivate;
                     _excelApp.WorkbookNewSheet -= ExcelApp_WorkbookNewSheet;
                     _excelApp = null;
                 }
@@ -182,35 +179,6 @@ namespace ExcelSheetManager
             RefreshAllTaskPanes();
         }
 
-        public static void HighlightActiveWorkbookInAllTaskPanes(string wbName)
-        {
-            if (string.IsNullOrEmpty(wbName)) return;
-
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                List<int> deadHwnds = new List<int>();
-                foreach (var kvp in _taskPaneMap)
-                {
-                    if (IsTaskPaneAlive(kvp.Value))
-                    {
-                        if (kvp.Value.ContentControl is TaskPaneControl control)
-                        {
-                            control.HighlightWorkbookByName(wbName);
-                        }
-                    }
-                    else
-                    {
-                        deadHwnds.Add(kvp.Key);
-                    }
-                }
-
-                foreach (var h in deadHwnds)
-                {
-                    _taskPaneMap.Remove(h);
-                }
-            });
-        }
-
         public static void RefreshAllTaskPanes()
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
@@ -249,33 +217,6 @@ namespace ExcelSheetManager
                 }
                 catch { }
                 RefreshAllTaskPanes();
-            });
-        }
-
-        private void ExcelApp_WorkbookActivate(Excel.Workbook Wb)
-        {
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                try
-                {
-                    Excel.Window? win = (Wb.Windows != null && Wb.Windows.Count > 0) ? (Excel.Window)Wb.Windows[1] : _excelApp?.ActiveWindow;
-                    EnsureTaskPaneForWindow(win, createIfMissing: true);
-                    HighlightActiveWorkbookInAllTaskPanes(Wb.Name);
-                }
-                catch { }
-            });
-        }
-
-        private void ExcelApp_WindowActivate(Excel.Workbook Wb, Excel.Window Wn)
-        {
-            ExcelAsyncUtil.QueueAsMacro(() =>
-            {
-                try
-                {
-                    EnsureTaskPaneForWindow(Wn, createIfMissing: true);
-                    HighlightActiveWorkbookInAllTaskPanes(Wb.Name);
-                }
-                catch { }
             });
         }
 
