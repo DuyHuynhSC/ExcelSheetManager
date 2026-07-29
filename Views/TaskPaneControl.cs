@@ -37,6 +37,11 @@ namespace ExcelSheetManager.Views
         private readonly Color _textColor = Color.FromArgb(248, 250, 252);  // Slate 50 #F8FAFC
         private readonly Color _subTextColor = Color.FromArgb(148, 163, 184);// Slate 400 #94A3B8
 
+        // Layout Containers
+        private TableLayoutPanel _mainTable = null!;
+        private TableLayoutPanel _tblVung1 = null!;
+        private TableLayoutPanel _tblVung2 = null!;
+
         // Controls
         private Panel _pnlHeader = null!;
         private Label _lblTitle = null!;
@@ -77,11 +82,26 @@ namespace ExcelSheetManager.Views
         {
             this.SuspendLayout();
 
-            // 1. HEADER TOOLBAR PANEL (DOCK TOP)
+            // 1. ROOT TABLE LAYOUT PANEL (3 ROWS: HEADER 38px, CONTENT 100%, FOOTER 24px)
+            _mainTable = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 3,
+                Margin = new Padding(0),
+                Padding = new Padding(0),
+                BackColor = _bgColor
+            };
+            _mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            _mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f)); // Row 0: Header
+            _mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 1: SplitContainer
+            _mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f)); // Row 2: Status Footer
+
+            // 2. HEADER TOOLBAR PANEL (ROW 0)
             _pnlHeader = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 38,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
                 BackColor = _cardColor,
                 Padding = new Padding(8, 4, 8, 4)
             };
@@ -113,12 +133,13 @@ namespace ExcelSheetManager.Views
 
             _pnlHeader.Controls.Add(_btnRefresh);
             _pnlHeader.Controls.Add(_lblTitle);
+            _mainTable.Controls.Add(_pnlHeader, 0, 0);
 
-            // 2. STATUS LABEL (FOOTER - DOCK BOTTOM)
+            // 3. STATUS LABEL (ROW 2 - FOOTER)
             _lblStatus = new Label
             {
-                Dock = DockStyle.Bottom,
-                Height = 24,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
                 BackColor = _cardColor,
                 ForeColor = _subTextColor,
                 Font = new Font("Segoe UI", 8.5f),
@@ -126,8 +147,9 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(8, 0, 0, 0),
                 Text = "Ready"
             };
+            _mainTable.Controls.Add(_lblStatus, 0, 2);
 
-            // 3. SPLIT CONTAINER (VÙNG 1 & VÙNG 2 - DOCK FILL)
+            // 4. SPLIT CONTAINER (ROW 1 - CONTENT)
             _splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
@@ -135,14 +157,28 @@ namespace ExcelSheetManager.Views
                 SplitterWidth = 8,
                 Panel1MinSize = 80,
                 Panel2MinSize = 80,
+                Margin = new Padding(0),
                 BackColor = Color.FromArgb(51, 65, 85) // Slate 700 visible draggable splitter bar
             };
 
-            // --- VÙNG 1: OPEN FILES ---
+            // --- VÙNG 1: TABLE LAYOUT (ROW 0: HEADER 55px, ROW 1: LISTBOX 100%) ---
+            _tblVung1 = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Margin = new Padding(0),
+                Padding = new Padding(0),
+                BackColor = _bgColor
+            };
+            _tblVung1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));
+            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             _pnlVung1Header = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 55,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
                 BackColor = _bgColor,
                 Padding = new Padding(6, 4, 6, 4)
             };
@@ -173,6 +209,7 @@ namespace ExcelSheetManager.Views
             _lstWorkbooks = new ListBox
             {
                 Dock = DockStyle.Fill,
+                Margin = new Padding(0),
                 BackColor = _bgColor,
                 ForeColor = _textColor,
                 BorderStyle = BorderStyle.None,
@@ -182,16 +219,28 @@ namespace ExcelSheetManager.Views
             _lstWorkbooks.DrawItem += DrawWorkbookItem;
             _lstWorkbooks.SelectedIndexChanged += LstWorkbooks_SelectedIndexChanged;
 
-            // CORRECT DOCK ORDER IN PANEL 1: TOP HEADER FIRST, FILL LISTBOX SECOND
-            _splitContainer.Panel1.Controls.Add(_pnlVung1Header);
-            _splitContainer.Panel1.Controls.Add(_lstWorkbooks);
-            _splitContainer.Panel1.BackColor = _bgColor;
+            _tblVung1.Controls.Add(_pnlVung1Header, 0, 0);
+            _tblVung1.Controls.Add(_lstWorkbooks, 0, 1);
+            _splitContainer.Panel1.Controls.Add(_tblVung1);
 
-            // --- VÙNG 2: SHEETS LIST ---
+            // --- VÙNG 2: TABLE LAYOUT (ROW 0: HEADER 55px, ROW 1: LISTBOX 100%) ---
+            _tblVung2 = new TableLayoutPanel
+            {
+                Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
+                Margin = new Padding(0),
+                Padding = new Padding(0),
+                BackColor = _bgColor
+            };
+            _tblVung2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));
+            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+
             _pnlVung2Header = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 55,
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
                 BackColor = _bgColor,
                 Padding = new Padding(6, 4, 6, 4)
             };
@@ -222,6 +271,7 @@ namespace ExcelSheetManager.Views
             _lstSheets = new ListBox
             {
                 Dock = DockStyle.Fill,
+                Margin = new Padding(0),
                 BackColor = _bgColor,
                 ForeColor = _textColor,
                 BorderStyle = BorderStyle.None,
@@ -231,15 +281,14 @@ namespace ExcelSheetManager.Views
             _lstSheets.DrawItem += DrawSheetItem;
             _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
 
-            // CORRECT DOCK ORDER IN PANEL 2: TOP HEADER FIRST, FILL LISTBOX SECOND
-            _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
-            _splitContainer.Panel2.Controls.Add(_lstSheets);
-            _splitContainer.Panel2.BackColor = _bgColor;
+            _tblVung2.Controls.Add(_pnlVung2Header, 0, 0);
+            _tblVung2.Controls.Add(_lstSheets, 0, 1);
+            _splitContainer.Panel2.Controls.Add(_tblVung2);
 
-            // ADD CONTROLS IN PROPER WINFORMS DOCK ORDER: TOP -> BOTTOM -> FILL
-            this.Controls.Add(_pnlHeader);
-            this.Controls.Add(_lblStatus);
-            this.Controls.Add(_splitContainer);
+            _mainTable.Controls.Add(_splitContainer, 0, 1);
+
+            // ADD ROOT TABLE TO CONTROL
+            this.Controls.Add(_mainTable);
 
             this.ResumeLayout(false);
         }
@@ -255,11 +304,10 @@ namespace ExcelSheetManager.Views
         {
             try
             {
-                if (_splitContainer != null && this.Height > 160)
+                if (_splitContainer != null && _splitContainer.Height > 160)
                 {
-                    int availableHeight = this.Height - (_pnlHeader?.Height ?? 38) - (_lblStatus?.Height ?? 24);
-                    int half = availableHeight / 2;
-                    if (half >= _splitContainer.Panel1MinSize && half <= availableHeight - _splitContainer.Panel2MinSize)
+                    int half = _splitContainer.Height / 2;
+                    if (half >= _splitContainer.Panel1MinSize && half <= _splitContainer.Height - _splitContainer.Panel2MinSize)
                     {
                         _splitContainer.SplitterDistance = half;
                     }
