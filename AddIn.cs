@@ -76,10 +76,24 @@ namespace ExcelSheetManager
                     return null;
                 }
 
+                string parentWbName = string.Empty;
+                try
+                {
+                    if (targetWin.Parent is Excel.Workbook parentWb)
+                    {
+                        parentWbName = parentWb.Name;
+                    }
+                }
+                catch { }
+
                 if (_taskPaneMap.TryGetValue(hwnd, out var existingCtp))
                 {
                     if (IsTaskPaneAlive(existingCtp))
                     {
+                        if (existingCtp.ContentControl is TaskPaneControl existingControl && !string.IsNullOrEmpty(parentWbName))
+                        {
+                            existingControl.BoundWorkbookName = parentWbName;
+                        }
                         return existingCtp;
                     }
                     else
@@ -93,6 +107,11 @@ namespace ExcelSheetManager
                     // Create CustomTaskPane using pure WinForms TaskPaneControl directly bound to targetWin
                     CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneControl), "Sheet & File Manager", targetWin);
                     
+                    if (ctp.ContentControl is TaskPaneControl control && !string.IsNullOrEmpty(parentWbName))
+                    {
+                        control.BoundWorkbookName = parentWbName;
+                    }
+
                     // Enforce Right side panel docking both before and after Visible
                     ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
                     ctp.Width = 340;
@@ -141,6 +160,12 @@ namespace ExcelSheetManager
                         ctp.Visible = !ctp.Visible;
                         if (ctp.Visible && ctp.ContentControl is TaskPaneControl control)
                         {
+                            try
+                            {
+                                if (activeWin.Parent is Excel.Workbook wb) control.BoundWorkbookName = wb.Name;
+                            }
+                            catch { }
+
                             ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
                             ctp.Width = 340;
                             control.RefreshData();
@@ -172,6 +197,11 @@ namespace ExcelSheetManager
                 {
                     if (ctp.ContentControl is TaskPaneControl control)
                     {
+                        try
+                        {
+                            if (activeWin.Parent is Excel.Workbook wb) control.BoundWorkbookName = wb.Name;
+                        }
+                        catch { }
                         control.RefreshData();
                     }
                 }

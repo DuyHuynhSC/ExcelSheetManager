@@ -22,6 +22,8 @@ namespace ExcelSheetManager.Views
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, bool wParam, int lParam);
         private const int WM_SETREDRAW = 0x000B;
 
+        public string BoundWorkbookName { get; set; } = string.Empty;
+
         // UI Colors
         private readonly Color _bgColor = Color.FromArgb(15, 23, 42);      // Slate 900 #0F172A
         private readonly Color _cardColor = Color.FromArgb(30, 41, 59);    // Slate 800 #1E293B
@@ -263,13 +265,18 @@ namespace ExcelSheetManager.Views
 
                 _isUpdatingUi = true;
                 _allWorkbooks.Clear();
-                var currentActiveWb = excelApp.ActiveWorkbook;
+
+                string activeName = BoundWorkbookName;
+                if (string.IsNullOrEmpty(activeName) && excelApp.ActiveWorkbook != null)
+                {
+                    try { activeName = excelApp.ActiveWorkbook.Name; } catch { }
+                }
 
                 foreach (Excel.Workbook wb in excelApp.Workbooks)
                 {
                     try
                     {
-                        bool isActive = currentActiveWb != null && wb.Name.Equals(currentActiveWb.Name, StringComparison.OrdinalIgnoreCase);
+                        bool isActive = !string.IsNullOrEmpty(activeName) && wb.Name.Equals(activeName, StringComparison.OrdinalIgnoreCase);
                         _allWorkbooks.Add(new WorkbookItem
                         {
                             Name = wb.Name,
@@ -285,8 +292,10 @@ namespace ExcelSheetManager.Views
                 _lblVung1Title.Text = $"📁 OPEN FILES ({_allWorkbooks.Count})";
                 FilterWorkbooksList();
 
-                // Select current active workbook
-                WorkbookItem? target = _allWorkbooks.FirstOrDefault(w => w.IsActive) ?? _allWorkbooks.FirstOrDefault();
+                // Select current bound/active workbook
+                WorkbookItem? target = _allWorkbooks.FirstOrDefault(w => w.IsActive)
+                                      ?? _allWorkbooks.FirstOrDefault(w => w.Name.Equals(BoundWorkbookName, StringComparison.OrdinalIgnoreCase))
+                                      ?? _allWorkbooks.FirstOrDefault();
                 if (target != null)
                 {
                     SelectWorkbookItemInList(target);
@@ -305,7 +314,16 @@ namespace ExcelSheetManager.Views
         private void SelectWorkbookItemInList(WorkbookItem item)
         {
             _selectedWorkbook = item;
-            int idx = _lstWorkbooks.Items.IndexOf(item);
+            int idx = -1;
+            for (int i = 0; i < _lstWorkbooks.Items.Count; i++)
+            {
+                if (_lstWorkbooks.Items[i] is WorkbookItem wbItem && wbItem.Name.Equals(item.Name, StringComparison.OrdinalIgnoreCase))
+                {
+                    idx = i;
+                    break;
+                }
+            }
+
             if (idx >= 0)
             {
                 _lstWorkbooks.SelectedIndex = idx;
