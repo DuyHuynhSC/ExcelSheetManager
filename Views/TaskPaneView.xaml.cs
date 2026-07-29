@@ -16,11 +16,19 @@ namespace ExcelSheetManager.Views
 
         public MainViewModel? ViewModel => DataContext as MainViewModel;
 
-        private void SheetsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        private void WorkbooksListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
         {
-            if (ViewModel?.SelectedSheet != null)
+            if (ViewModel?.SelectedWorkbook != null)
             {
-                ViewModel.ActivateSheet(ViewModel.SelectedSheet);
+                ViewModel.ActivateWorkbook(ViewModel.SelectedWorkbook);
+            }
+        }
+
+        private void WorkbookItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is WorkbookItem workbookItem)
+            {
+                ViewModel?.ActivateWorkbook(workbookItem);
             }
         }
 
@@ -29,6 +37,22 @@ namespace ExcelSheetManager.Views
             if (ViewModel?.SelectedWorkbook != null)
             {
                 ViewModel.ActivateWorkbook(ViewModel.SelectedWorkbook);
+            }
+        }
+
+        private void SheetsListBox_SelectionChanged(object sender, SelectionChangedEventArgs e)
+        {
+            if (ViewModel?.SelectedSheet != null)
+            {
+                ViewModel.ActivateSheet(ViewModel.SelectedSheet);
+            }
+        }
+
+        private void SheetItem_MouseLeftButtonDown(object sender, MouseButtonEventArgs e)
+        {
+            if (sender is FrameworkElement element && element.DataContext is SheetItem sheetItem)
+            {
+                ViewModel?.ActivateSheet(sheetItem);
             }
         }
     }

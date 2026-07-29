@@ -271,6 +271,15 @@ namespace ExcelSheetManager.ViewModels
             try
             {
                 wb.Activate();
+                if (wb.Windows != null && wb.Windows.Count > 0)
+                {
+                    try
+                    {
+                        ((Excel.Window)wb.Windows[1]).Activate();
+                    }
+                    catch { }
+                }
+
                 foreach (var w in _allWorkbooks)
                 {
                     w.IsActive = (w.Name == item.Name);
@@ -295,12 +304,20 @@ namespace ExcelSheetManager.ViewModels
                 {
                     var parentWb = (Excel.Workbook)ws.Parent;
                     parentWb.Activate();
+                    if (parentWb.Windows != null && parentWb.Windows.Count > 0)
+                    {
+                        try { ((Excel.Window)parentWb.Windows[1]).Activate(); } catch { }
+                    }
                     ws.Activate();
                 }
                 else if (item.SheetRef is Excel.Chart chart)
                 {
                     var parentWb = (Excel.Workbook)chart.Parent;
                     parentWb.Activate();
+                    if (parentWb.Windows != null && parentWb.Windows.Count > 0)
+                    {
+                        try { ((Excel.Window)parentWb.Windows[1]).Activate(); } catch { }
+                    }
                     chart.Activate();
                 }
 

@@ -81,7 +81,7 @@
         </Style>
     </UserControl.Resources>
 
-    <Grid Margin="10">
+    <Grid Margin="6,8">
         <Grid.RowDefinitions>
             <!-- Header Toolbar -->
             <RowDefinition Height="Auto"/>
@@ -171,13 +171,14 @@
                      x:Name="WorkbooksListBox"
                      ItemsSource="{Binding FilteredWorkbooks}"
                      SelectedItem="{Binding SelectedWorkbook, Mode=TwoWay}"
+                     SelectionChanged="WorkbooksListBox_SelectionChanged"
                      ItemContainerStyle="{StaticResource FileListBoxItemStyle}"
                      MouseDoubleClick="WorkbooksListBox_MouseDoubleClick"
                      Background="Transparent" BorderThickness="0"
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid>
+                        <Grid MouseLeftButtonDown="WorkbookItem_MouseLeftButtonDown" Background="Transparent">
                             <Grid.ColumnDefinitions>
                                 <ColumnDefinition Width="Auto"/>
                                 <ColumnDefinition Width="*"/>
@@ -244,7 +245,7 @@
                      ScrollViewer.HorizontalScrollBarVisibility="Disabled">
                 <ListBox.ItemTemplate>
                     <DataTemplate>
-                        <Grid>
+                        <Grid MouseLeftButtonDown="SheetItem_MouseLeftButtonDown" Background="Transparent">
                             <Grid.ColumnDefinitions>
                                 <!-- Tab Color Badge -->
                                 <ColumnDefinition Width="Auto"/>
