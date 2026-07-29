@@ -113,7 +113,7 @@ namespace ExcelSheetManager.Views
             _btnRefresh = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 68,
+                Width = 65,
                 Text = "Refresh",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -128,8 +128,8 @@ namespace ExcelSheetManager.Views
             _btnTheme = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 68,
-                Text = _isDarkTheme ? "☀️ Light" : "🌙 Dark",
+                Width = 65,
+                Text = _isDarkTheme ? "Light" : "Dark",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
@@ -351,9 +351,9 @@ namespace ExcelSheetManager.Views
             _mainTable.BackColor = _bgColor;
             _pnlHeader.BackColor = _cardColor;
 
-            _btnTheme.Text = _isDarkTheme ? "☀️ Light" : "🌙 Dark";
-            _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
-            _btnTheme.ForeColor = _isDarkTheme ? Color.White : Color.FromArgb(15, 23, 42);
+            _btnTheme.Text = _isDarkTheme ? "Light" : "Dark";
+            _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(30, 41, 59);
+            _btnTheme.ForeColor = Color.White;
 
             _lblStatus.BackColor = _cardColor;
             _lblStatus.ForeColor = _subTextColor;
