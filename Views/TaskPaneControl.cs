@@ -123,27 +123,43 @@ namespace ExcelSheetManager.Views
             _lblTitle = new Label
             {
                 Dock = DockStyle.Left,
-                Width = 145,
+                Width = 155,
                 BackColor = Color.Transparent
             };
 
-            // Custom GDI+ Vector Chart Icon + Text Painting
+            // Custom GDI+ Vibrant Multi-Color Bar Chart Icon Painting
             _lblTitle.Paint += (s, pe) =>
             {
                 pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-                // Draw 3 Vector Bar Chart Bars (Cyan #38BDF8)
-                using (var brush = new SolidBrush(Color.FromArgb(56, 189, 248)))
+                // Bar 1 - Bright Sky Blue (#0099FF)
+                using (var b1 = new SolidBrush(Color.FromArgb(0, 153, 255)))
                 {
-                    pe.Graphics.FillRectangle(brush, 6, 18, 4, 8);   // Bar 1
-                    pe.Graphics.FillRectangle(brush, 12, 14, 4, 12); // Bar 2
-                    pe.Graphics.FillRectangle(brush, 18, 10, 4, 16); // Bar 3
+                    pe.Graphics.FillRectangle(b1, 4, 18, 4, 8);
                 }
 
-                // Draw NAVIGATION Text
+                // Bar 2 - Vibrant Emerald Green (#10B981)
+                using (var b2 = new SolidBrush(Color.FromArgb(16, 185, 129)))
+                {
+                    pe.Graphics.FillRectangle(b2, 10, 14, 4, 12);
+                }
+
+                // Bar 3 - Warm Amber / Gold (#F59E0B)
+                using (var b3 = new SolidBrush(Color.FromArgb(245, 158, 11)))
+                {
+                    pe.Graphics.FillRectangle(b3, 16, 10, 4, 16);
+                }
+
+                // Bar 4 - Bright Rose Pink (#EC4899)
+                using (var b4 = new SolidBrush(Color.FromArgb(236, 72, 153)))
+                {
+                    pe.Graphics.FillRectangle(b4, 22, 6, 4, 20);
+                }
+
+                // Draw NAVIGATION Text in Crisp White
                 using (var font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
                 {
-                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(26, 6), Color.FromArgb(56, 189, 248));
+                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(32, 6), Color.FromArgb(248, 250, 252));
                 }
             };
 
@@ -666,7 +682,7 @@ namespace ExcelSheetManager.Views
                     parentWb.Activate();
                     if (parentWb.Windows != null && parentWb.Windows.Count > 0)
                     {
-                        Excel.Window win = (Excel.Window)parentWb.Windows[1];
+                        Excel.Window win = (Excel.Workbook)parentWb.Windows[1];
                         win.Activate();
                         IntPtr hwnd = new IntPtr(win.Hwnd);
                         if (hwnd != IntPtr.Zero)
