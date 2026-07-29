@@ -248,27 +248,6 @@ namespace ExcelSheetManager.Views
             RefreshData();
         }
 
-        public void HighlightWorkbookByName(string wbName)
-        {
-            if (string.IsNullOrEmpty(wbName)) return;
-
-            for (int i = 0; i < _lstWorkbooks.Items.Count; i++)
-            {
-                if (_lstWorkbooks.Items[i] is WorkbookItem item && item.Name.Equals(wbName, StringComparison.OrdinalIgnoreCase))
-                {
-                    if (_lstWorkbooks.SelectedIndex != i)
-                    {
-                        _isUpdatingUi = true;
-                        _lstWorkbooks.SelectedIndex = i;
-                        _selectedWorkbook = item;
-                        LoadSheetsForWorkbook(item);
-                        _isUpdatingUi = false;
-                    }
-                    break;
-                }
-            }
-        }
-
         public void RefreshData()
         {
             try
@@ -308,10 +287,7 @@ namespace ExcelSheetManager.Views
                 WorkbookItem? target = _allWorkbooks.FirstOrDefault(w => w.IsActive) ?? _allWorkbooks.FirstOrDefault();
                 if (target != null)
                 {
-                    _selectedWorkbook = target;
-                    int idx = _lstWorkbooks.Items.IndexOf(target);
-                    if (idx >= 0) _lstWorkbooks.SelectedIndex = idx;
-                    LoadSheetsForWorkbook(target);
+                    SelectWorkbookItemInList(target);
                 }
 
                 _lblStatus.Text = $"Updated at {DateTime.Now:HH:mm:ss} ({_allWorkbooks.Count} files)";
@@ -322,6 +298,18 @@ namespace ExcelSheetManager.Views
                 _isUpdatingUi = false;
                 _lblStatus.Text = $"Refresh error: {ex.Message}";
             }
+        }
+
+        private void SelectWorkbookItemInList(WorkbookItem item)
+        {
+            _selectedWorkbook = item;
+            int idx = _lstWorkbooks.Items.IndexOf(item);
+            if (idx >= 0)
+            {
+                _lstWorkbooks.SelectedIndex = idx;
+                _lstWorkbooks.Invalidate();
+            }
+            LoadSheetsForWorkbook(item);
         }
 
         private void FilterWorkbooksList()
@@ -472,9 +460,14 @@ namespace ExcelSheetManager.Views
             int idx = _lstWorkbooks.IndexFromPoint(e.Location);
             if (idx >= 0 && _lstWorkbooks.Items[idx] is WorkbookItem item)
             {
+                _isUpdatingUi = true;
+                _lstWorkbooks.SelectedIndex = idx;
                 _selectedWorkbook = item;
+                _lstWorkbooks.Invalidate();
+
                 LoadSheetsForWorkbook(item);
                 ActivateWorkbookInExcel(item);
+                _isUpdatingUi = false;
             }
         }
 
@@ -484,6 +477,8 @@ namespace ExcelSheetManager.Views
             int idx = _lstSheets.IndexFromPoint(e.Location);
             if (idx >= 0 && _lstSheets.Items[idx] is SheetItem item)
             {
+                _lstSheets.SelectedIndex = idx;
+                _lstSheets.Invalidate();
                 ActivateSheetInExcel(item);
             }
         }
@@ -544,7 +539,7 @@ namespace ExcelSheetManager.Views
             if (e.Index < 0 || e.Index >= _lstWorkbooks.Items.Count) return;
             var item = (WorkbookItem)_lstWorkbooks.Items[e.Index];
 
-            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            bool isSelected = (e.Index == _lstWorkbooks.SelectedIndex) || ((e.State & DrawItemState.Selected) == DrawItemState.Selected);
             Color itemBg = isSelected ? _selectColor : _cardColor;
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
@@ -587,7 +582,7 @@ namespace ExcelSheetManager.Views
             if (e.Index < 0 || e.Index >= _lstSheets.Items.Count) return;
             var item = (SheetItem)_lstSheets.Items[e.Index];
 
-            bool isSelected = (e.State & DrawItemState.Selected) == DrawItemState.Selected;
+            bool isSelected = (e.Index == _lstSheets.SelectedIndex) || ((e.State & DrawItemState.Selected) == DrawItemState.Selected);
             Color itemBg = isSelected ? Color.FromArgb(79, 70, 229) : _cardColor; // Indigo 600 if selected
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
