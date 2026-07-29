@@ -33,7 +33,7 @@ namespace ExcelSheetManager
                 // Initialize taskpane for active window
                 ExcelAsyncUtil.QueueAsMacro(() =>
                 {
-                    EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                    EnsureTaskPaneForWindow(_excelApp?.ActiveWindow, createIfMissing: true);
                 });
             }
             catch (Exception ex)
@@ -69,7 +69,7 @@ namespace ExcelSheetManager
             }
         }
 
-        public static CustomTaskPane? EnsureTaskPaneForActiveWindow(bool createIfMissing = true)
+        public static CustomTaskPane? EnsureTaskPaneForWindow(Excel.Window? targetWin, bool createIfMissing = true)
         {
             try
             {
@@ -83,10 +83,18 @@ namespace ExcelSheetManager
                     return null;
                 }
 
-                Excel.Window activeWin = _excelApp.ActiveWindow;
-                if (activeWin == null) return null;
+                targetWin ??= _excelApp.ActiveWindow;
+                if (targetWin == null) return null;
 
-                int hwnd = activeWin.Hwnd;
+                int hwnd;
+                try
+                {
+                    hwnd = targetWin.Hwnd;
+                }
+                catch
+                {
+                    return null;
+                }
 
                 if (_taskPaneMap.TryGetValue(hwnd, out var existingCtp))
                 {
@@ -102,11 +110,13 @@ namespace ExcelSheetManager
 
                 if (createIfMissing)
                 {
-                    // Create CustomTaskPane specifically bound to this Excel.Window instance
-                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager", activeWin);
+                    // Create CustomTaskPane specifically bound to targetWin
+                    CustomTaskPane ctp = CustomTaskPaneFactory.CreateCustomTaskPane(typeof(TaskPaneHost), "Sheet & File Manager", targetWin);
+                    
+                    // Make visible FIRST, then set DockPosition to Right and set width to ensure native Excel docking panel layout
+                    ctp.Visible = true;
                     ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
                     ctp.Width = 340;
-                    ctp.Visible = true;
 
                     _taskPaneMap[hwnd] = ctp;
                     return ctp;
@@ -140,20 +150,23 @@ namespace ExcelSheetManager
                 try
                 {
                     if (_excelApp == null) _excelApp = (Excel.Application)ExcelDnaUtil.Application;
-                    if (_excelApp?.ActiveWindow == null) return;
+                    Excel.Window? activeWin = _excelApp?.ActiveWindow;
+                    if (activeWin == null) return;
 
-                    int hwnd = _excelApp.ActiveWindow.Hwnd;
+                    int hwnd = activeWin.Hwnd;
                     if (_taskPaneMap.TryGetValue(hwnd, out var ctp) && IsTaskPaneAlive(ctp))
                     {
                         ctp.Visible = !ctp.Visible;
                         if (ctp.Visible)
                         {
+                            ctp.DockPosition = MsoCTPDockPosition.msoCTPDockPositionRight;
+                            ctp.Width = 340;
                             RefreshAllTaskPanes();
                         }
                     }
                     else
                     {
-                        EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                        EnsureTaskPaneForWindow(activeWin, createIfMissing: true);
                         RefreshAllTaskPanes();
                     }
                 }
@@ -200,7 +213,12 @@ namespace ExcelSheetManager
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                try
+                {
+                    Excel.Window? win = (Wb.Windows != null && Wb.Windows.Count > 0) ? (Excel.Window)Wb.Windows[1] : _excelApp?.ActiveWindow;
+                    EnsureTaskPaneForWindow(win, createIfMissing: true);
+                }
+                catch { }
                 RefreshAllTaskPanes();
             });
         }
@@ -209,7 +227,12 @@ namespace ExcelSheetManager
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                try
+                {
+                    Excel.Window? win = (Wb.Windows != null && Wb.Windows.Count > 0) ? (Excel.Window)Wb.Windows[1] : _excelApp?.ActiveWindow;
+                    EnsureTaskPaneForWindow(win, createIfMissing: true);
+                }
+                catch { }
                 RefreshAllTaskPanes();
             });
         }
@@ -218,7 +241,7 @@ namespace ExcelSheetManager
         {
             ExcelAsyncUtil.QueueAsMacro(() =>
             {
-                EnsureTaskPaneForActiveWindow(createIfMissing: true);
+                EnsureTaskPaneForWindow(Wn, createIfMissing: true);
                 RefreshAllTaskPanes();
             });
         }
