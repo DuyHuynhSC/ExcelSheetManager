@@ -111,7 +111,6 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(0, 4, 0, 0)
             };
 
-            // ADD REFRESH BUTTON FIRST (DOCK RIGHT), THEN TITLE (DOCK LEFT)
             _pnlHeader.Controls.Add(_btnRefresh);
             _pnlHeader.Controls.Add(_lblTitle);
 
@@ -235,14 +234,10 @@ namespace ExcelSheetManager.Views
             _splitContainer.Panel2.Controls.Add(_pnlVung2Header);
             _splitContainer.Panel2.BackColor = _bgColor;
 
-            // ADD CONTROLS WITH CORRECT WINFORMS DOCKING Z-ORDER
-            this.Controls.Add(_splitContainer);
-            this.Controls.Add(_lblStatus);
+            // ADD CONTROLS IN PROPER WINFORMS DOCK ORDER: TOP -> BOTTOM -> FILL
             this.Controls.Add(_pnlHeader);
-
-            _pnlHeader.BringToFront();
-            _lblStatus.SendToBack();
-            _splitContainer.SendToBack();
+            this.Controls.Add(_lblStatus);
+            this.Controls.Add(_splitContainer);
 
             this.ResumeLayout(false);
         }
