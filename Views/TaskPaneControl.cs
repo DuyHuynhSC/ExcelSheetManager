@@ -305,11 +305,11 @@ namespace ExcelSheetManager.Views
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // Copy Sheet Name Button (Far Right in Vùng 2 Header - Vibrant Emerald Green #10B981)
+            // Copy Sheet Name Button (Far Right - Emerald Green #10B981)
             _btnCopySheetName = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 52,
+                Width = 48,
                 Text = "Copy",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -328,11 +328,11 @@ namespace ExcelSheetManager.Views
                 BackColor = Color.Transparent
             };
 
-            // Hide/Show Hidden Sheets Button (Next to Gap - Vibrant Sky Blue #0284C7)
+            // Hide/Show Hidden Sheets Button (Width 78px to fit "Hide/Show" completely - Sky Blue #0284C7)
             _btnToggleHidden = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 68,
+                Width = 78,
                 Text = "Hide/Show",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 ForeColor = Color.White,
