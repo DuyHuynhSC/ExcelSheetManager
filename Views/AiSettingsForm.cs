@@ -23,6 +23,7 @@ namespace ExcelSheetManager.Views
             this.StartPosition = FormStartPosition.CenterScreen;
             this.MaximizeBox = false;
             this.MinimizeBox = false;
+            this.TopMost = true;
 
             bool isDark = SettingsHelper.GetIsDarkTheme();
             this.BackColor = isDark ? Color.FromArgb(15, 23, 42) : Color.FromArgb(241, 245, 249);

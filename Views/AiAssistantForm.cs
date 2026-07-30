@@ -192,7 +192,8 @@ namespace ExcelSheetManager.Views
         {
             using (AiSettingsForm form = new AiSettingsForm())
             {
-                form.ShowDialog();
+                form.TopMost = true;
+                form.ShowDialog(this);
             }
         }
 
