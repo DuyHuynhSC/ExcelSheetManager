@@ -1,5 +1,8 @@
 using System;
+using System.Collections.Generic;
 using System.Drawing;
+using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ExcelDna.Integration;
@@ -45,7 +48,7 @@ namespace ExcelSheetManager.Views
 
         public AiAssistantForm()
         {
-            this.Size = new Size(580, 480);
+            this.Size = new Size(580, 490);
             this.Text = "🤖 Local AI Assistant for Excel";
             this.StartPosition = FormStartPosition.CenterScreen;
             this.TopMost = true;
@@ -66,7 +69,7 @@ namespace ExcelSheetManager.Views
             Panel pnlTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 130,
+                Height = 135,
                 Padding = new Padding(12, 10, 12, 6)
             };
 
@@ -74,13 +77,14 @@ namespace ExcelSheetManager.Views
             _cmbMode = new ComboBox
             {
                 Location = new Point(110, 6),
-                Width = 240,
+                Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             _cmbMode.Items.Add("⚡ Generate Excel Formula");
+            _cmbMode.Items.Add("🌐 Translate Cell / Range (Dịch thuật)");
             _cmbMode.Items.Add("🔍 Explain Sheet / Formula");
             _cmbMode.Items.Add("💬 General Excel Assistant");
-            _cmbMode.SelectedIndex = 0;
+            _cmbMode.SelectedIndex = 1; // Default to Translate mode
 
             _btnSettings = new Button
             {
@@ -97,10 +101,10 @@ namespace ExcelSheetManager.Views
             {
                 Location = new Point(12, 40),
                 Width = 420,
-                Height = 75,
+                Height = 80,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                Text = "Write a formula to calculate total sum of B2:B50 if A2:A50 equals 'Paid'"
+                Text = "Hãy dịch nội dung tại cell B1 từ tiếng Nhật sang tiếng Việt"
             };
 
             _btnSend = new Button
@@ -108,7 +112,7 @@ namespace ExcelSheetManager.Views
                 Text = "🚀 Send",
                 Location = new Point(440, 40),
                 Width = 110,
-                Height = 75,
+                Height = 80,
                 BackColor = Color.FromArgb(59, 130, 246),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 10f, FontStyle.Bold),
@@ -137,7 +141,7 @@ namespace ExcelSheetManager.Views
                 Dock = DockStyle.Left,
                 AutoSize = true,
                 TextAlign = ContentAlignment.MiddleLeft,
-                Text = "Ready to connect to Local AI model.",
+                Text = "Specify cell (e.g. B1) in prompt for auto-reading Excel data.",
                 ForeColor = Color.FromArgb(148, 163, 184)
             };
 
@@ -203,20 +207,24 @@ namespace ExcelSheetManager.Views
             if (string.IsNullOrEmpty(prompt)) return;
 
             _btnSend.Enabled = false;
-            _lblStatus.Text = "Sending request to Local AI...";
+            _lblStatus.Text = "Reading Excel cells & sending to Local AI...";
             _lblStatus.ForeColor = Color.FromArgb(59, 130, 246);
-            _txtResponse.Text = "Generating AI response...";
+            _txtResponse.Text = "Reading Excel cells and generating AI response...";
+
+            // Auto-extract cell content referenced in user prompt
+            string enrichedPrompt = EnrichPromptWithExcelCellData(prompt);
 
             string systemPrompt = _cmbMode.SelectedIndex switch
             {
                 0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
-                1 => "You are an Excel data analyst. Explain the user's Excel formula or data clearly and concisely.",
+                1 => "You are an expert translator integrated in Microsoft Excel. Read the provided cell content carefully and translate it accurately as requested. Output ONLY the translated text without extra conversational fluff.",
+                2 => "You are an Excel data analyst. Explain the user's Excel formula or data clearly and concisely.",
                 _ => "You are an intelligent AI assistant integrated inside Microsoft Excel."
             };
 
             try
             {
-                string result = await AiService.GetCompletionAsync(prompt, systemPrompt);
+                string result = await AiService.GetCompletionAsync(enrichedPrompt, systemPrompt);
                 _txtResponse.Text = result;
                 _lblStatus.Text = "AI Response received successfully.";
                 _lblStatus.ForeColor = Color.FromArgb(16, 185, 129);
@@ -230,6 +238,84 @@ namespace ExcelSheetManager.Views
             finally
             {
                 _btnSend.Enabled = true;
+            }
+        }
+
+        private string EnrichPromptWithExcelCellData(string userPrompt)
+        {
+            try
+            {
+                var excelApp = (Excel.Application)ExcelDnaUtil.Application;
+                if (excelApp == null || excelApp.ActiveSheet == null) return userPrompt;
+
+                // Match cell references like B1, A1:C10, Sheet1!B1
+                var matches = System.Text.RegularExpressions.Regex.Matches(
+                    userPrompt,
+                    @"\b([A-Za-z]{1,3}[1-9][0-9]{0,6}(?::[A-Za-z]{1,3}[1-9][0-9]{0,6})?)\b",
+                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                );
+
+                List<string> foundRefs = new List<string>();
+                foreach (System.Text.RegularExpressions.Match m in matches)
+                {
+                    string val = m.Value.Trim();
+                    // Filter out common non-cell words
+                    if (val.Length == 1 || (val.Length <= 3 && !val.Any(char.IsDigit))) continue;
+                    if (!foundRefs.Contains(val, StringComparer.OrdinalIgnoreCase))
+                    {
+                        foundRefs.Add(val);
+                    }
+                }
+
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine(userPrompt);
+
+                if (excelApp?.ActiveSheet is Excel.Worksheet activeWs)
+                {
+                    bool addedContext = false;
+
+                    if (foundRefs.Count > 0)
+                    {
+                        sb.AppendLine("\n--- DỮ LIỆU ĐỌC TỰ ĐỘNG TỪ EXCEL ---");
+                        foreach (string cellRef in foundRefs)
+                        {
+                            try
+                            {
+                                Excel.Range? range = activeWs.get_Range(cellRef);
+                                if (range != null)
+                                {
+                                    object raw = range.Value2;
+                                    string textVal = raw != null ? raw.ToString() : "(Ô trống)";
+                                    sb.AppendLine($"[Cell {cellRef}]: \"{textVal}\"");
+                                    addedContext = true;
+                                }
+                            }
+                            catch { }
+                        }
+                    }
+
+                    // If no specific cell ref in prompt, read current ActiveCell if available
+                    if (!addedContext && excelApp.ActiveCell != null)
+                    {
+                        try
+                        {
+                            Excel.Range activeCell = excelApp.ActiveCell;
+                            object raw = activeCell.Value2;
+                            if (raw != null && !string.IsNullOrEmpty(raw.ToString()))
+                            {
+                                sb.AppendLine("\n--- DỮ LIỆU ĐỌC TỰ ĐỘNG TỪ Ô ĐANG CHỌN ---");
+                                sb.AppendLine($"[Cell {activeCell.Address[false, false]}]: \"{raw}\"");
+                            }
+                        }
+                        catch { }
+                    }
+                }
+
+                return sb.ToString();
+            }
+            catch
+            {
+                return userPrompt;
             }
         }
 
