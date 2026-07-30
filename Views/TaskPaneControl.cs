@@ -305,26 +305,38 @@ namespace ExcelSheetManager.Views
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // Copy Sheet Name Button (Far Right in Vùng 2 Header)
+            // Copy Sheet Name Button (Far Right in Vùng 2 Header - Vibrant Emerald Green #10B981)
             _btnCopySheetName = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 55,
+                Width = 52,
                 Text = "Copy",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(16, 185, 129), // Emerald Green
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
             _btnCopySheetName.FlatAppearance.BorderSize = 0;
             _btnCopySheetName.Click += (s, e) => CopySelectedSheetName();
 
-            // Hide/Show Hidden Sheets Button (Next to Copy in Vùng 2 Header)
+            // 4px Physical Gap Spacer between buttons
+            Panel spacer = new Panel
+            {
+                Dock = DockStyle.Right,
+                Width = 4,
+                BackColor = Color.Transparent
+            };
+
+            // Hide/Show Hidden Sheets Button (Next to Gap - Vibrant Sky Blue #0284C7)
             _btnToggleHidden = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 72,
+                Width = 68,
                 Text = "Hide/Show",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(2, 132, 199), // Sky Blue
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -332,8 +344,9 @@ namespace ExcelSheetManager.Views
             _btnToggleHidden.Click += (s, e) => ToggleSheetVisibility();
 
             _pnlVung2Top.Controls.Add(_lblVung2Title);
-            _pnlVung2Top.Controls.Add(_btnToggleHidden);
-            _pnlVung2Top.Controls.Add(_btnCopySheetName);
+            _pnlVung2Top.Controls.Add(_btnCopySheetName);  // Far Right (Green)
+            _pnlVung2Top.Controls.Add(spacer);             // 4px Spacer Gap
+            _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Left of Spacer (Blue)
 
             _txtFilterSheet = new TextBox
             {
@@ -396,11 +409,12 @@ namespace ExcelSheetManager.Views
             _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(30, 41, 59);
             _btnTheme.ForeColor = Color.White;
 
-            _btnToggleHidden.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
-            _btnToggleHidden.ForeColor = _isDarkTheme ? Color.White : Color.FromArgb(15, 23, 42);
+            // Distinct eye-catching colors with 4px physical gap
+            _btnToggleHidden.BackColor = Color.FromArgb(2, 132, 199);  // Sky Blue
+            _btnToggleHidden.ForeColor = Color.White;
 
-            _btnCopySheetName.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
-            _btnCopySheetName.ForeColor = _isDarkTheme ? Color.White : Color.FromArgb(15, 23, 42);
+            _btnCopySheetName.BackColor = Color.FromArgb(16, 185, 129); // Vibrant Emerald Green
+            _btnCopySheetName.ForeColor = Color.White;
 
             _lblStatus.BackColor = _cardColor;
             _lblStatus.ForeColor = _subTextColor;
