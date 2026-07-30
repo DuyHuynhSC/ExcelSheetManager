@@ -11,6 +11,7 @@ namespace ExcelSheetManager.Models
         public bool HasCustomTabColor { get; set; }
         public bool IsVisible { get; set; } = true;
         public bool IsActive { get; set; }
+        public bool IsProtected { get; set; }
         public string SheetType { get; set; } = "Worksheet";
     }
 }

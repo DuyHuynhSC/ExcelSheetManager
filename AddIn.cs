@@ -346,5 +346,14 @@ namespace ExcelSheetManager
         {
             RefreshAllTaskPanes();
         }
+
+        [ExcelCommand(ShortCut = "^+F")]
+        public static void ShowQuickJumpWindow()
+        {
+            ExcelAsyncUtil.QueueAsMacro(() =>
+            {
+                QuickJumpForm.ShowForm();
+            });
+        }
     }
 }

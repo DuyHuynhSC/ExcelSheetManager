@@ -66,6 +66,11 @@ namespace ExcelSheetManager.Views
         private TextBox _txtFilterSheet = null!;
         private ListBox _lstSheets = null!;
 
+        private ContextMenuStrip _cmsSheetMenu = null!;
+        private ToolStripMenuItem _miProtectSheet = null!;
+        private ToolStripMenuItem _miCopyName = null!;
+        private ToolStripMenuItem _miToggleHide = null!;
+
         private Label _lblStatus = null!;
 
         // Data Storage
@@ -370,6 +375,22 @@ namespace ExcelSheetManager.Views
             };
             _lstSheets.DrawItem += DrawSheetItem;
             _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
+            _lstSheets.MouseDown += LstSheets_MouseDown;
+
+            // Sheet Context Menu Initialization
+            _cmsSheetMenu = new ContextMenuStrip();
+            _miProtectSheet = new ToolStripMenuItem("🔒 Protect Sheet...");
+            _miProtectSheet.Click += (s, e) => ToggleProtectSelectedSheet();
+
+            _miCopyName = new ToolStripMenuItem("📋 Copy Sheet Name");
+            _miCopyName.Click += (s, e) => CopySelectedSheetName();
+
+            _miToggleHide = new ToolStripMenuItem("👁️ Hide / Unhide Sheet");
+            _miToggleHide.Click += (s, e) => ToggleSheetVisibility();
+
+            _cmsSheetMenu.Items.Add(_miProtectSheet);
+            _cmsSheetMenu.Items.Add(_miCopyName);
+            _cmsSheetMenu.Items.Add(_miToggleHide);
 
             _tblVung2.Controls.Add(_pnlVung2Header, 0, 0);
             _tblVung2.Controls.Add(_lstSheets, 0, 1);
@@ -381,6 +402,23 @@ namespace ExcelSheetManager.Views
             this.Controls.Add(_mainTable);
 
             this.ResumeLayout(false);
+        }
+
+        private void LstSheets_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                int index = _lstSheets.IndexFromPoint(e.Location);
+                if (index >= 0 && index < _lstSheets.Items.Count)
+                {
+                    _lstSheets.SelectedIndex = index;
+                    if (_lstSheets.Items[index] is SheetItem item)
+                    {
+                        _miProtectSheet.Text = item.IsProtected ? "🔓 Unprotect Sheet..." : "🔒 Protect Sheet...";
+                        _cmsSheetMenu.Show(_lstSheets, e.Location);
+                    }
+                }
+            }
         }
 
         private void ToggleTheme()
@@ -627,6 +665,7 @@ namespace ExcelSheetManager.Views
                             HasCustomTabColor = hasCustom,
                             IsVisible = ws.Visible == Excel.XlSheetVisibility.xlSheetVisible,
                             IsActive = ws.Name.Equals(activeSheetName, StringComparison.OrdinalIgnoreCase),
+                            IsProtected = ws.ProtectContents,
                             SheetType = "Worksheet"
                         });
                     }
@@ -641,6 +680,7 @@ namespace ExcelSheetManager.Views
                             HasCustomTabColor = true,
                             IsVisible = chart.Visible == Excel.XlSheetVisibility.xlSheetVisible,
                             IsActive = false,
+                            IsProtected = false,
                             SheetType = "Chart"
                         });
                     }
@@ -800,6 +840,71 @@ namespace ExcelSheetManager.Views
             catch (Exception ex)
             {
                 _lblStatus.Text = $"Could not copy sheet name: {ex.Message}";
+            }
+        }
+
+        private void ToggleProtectSelectedSheet()
+        {
+            try
+            {
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
+                    {
+                        var excelApp = (Excel.Application)ExcelDnaUtil.Application;
+
+                        if (ws.ProtectContents)
+                        {
+                            try
+                            {
+                                ws.Unprotect();
+                                _lblStatus.Text = $"Unprotected sheet: {ws.Name}";
+                            }
+                            catch
+                            {
+                                if (excelApp != null)
+                                {
+                                    object input = excelApp.InputBox($"Enter password to unprotect sheet '{ws.Name}':", "Unprotect Sheet", Type.Missing, Type.Missing, Type.Missing, Type.Missing, Type.Missing, 2);
+                                    if (input is string pwd && !string.IsNullOrEmpty(pwd))
+                                    {
+                                        ws.Unprotect(pwd);
+                                        _lblStatus.Text = $"Unprotected sheet: {ws.Name}";
+                                    }
+                                }
+                            }
+                        }
+                        else
+                        {
+                            if (excelApp != null)
+                            {
+                                object input = excelApp.InputBox($"Enter password to protect sheet '{ws.Name}' (or click OK with blank):", "Protect Sheet", "", Type.Missing, Type.Missing, Type.Missing, Type.Missing, 2);
+                                if (input is bool b && !b) return; // User clicked Cancel
+
+                                string pwd = input as string ?? string.Empty;
+                                if (string.IsNullOrEmpty(pwd))
+                                {
+                                    ws.Protect();
+                                }
+                                else
+                                {
+                                    ws.Protect(pwd);
+                                }
+                                _lblStatus.Text = $"Protected sheet: {ws.Name}";
+                            }
+                            else
+                            {
+                                ws.Protect();
+                                _lblStatus.Text = $"Protected sheet: {ws.Name}";
+                            }
+                        }
+
+                        RefreshData();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Protection error: {ex.Message}";
             }
         }
 
@@ -1003,14 +1108,20 @@ namespace ExcelSheetManager.Views
                 }
             }
 
+            // Calculate right badges offset
+            int badgeOffset = 10;
+            if (!item.IsVisible) badgeOffset += 52;
+            if (item.IsProtected) badgeOffset += 32;
+
             // Draw Sheet Name across full width
             int leftOffset = (item.HasCustomTabColor || isSelected) ? 10 : 18;
-            int rightPadding = item.IsVisible ? 10 : 56;
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
-                Rectangle nameRect = new Rectangle(e.Bounds.X + leftOffset, e.Bounds.Y + 4, e.Bounds.Width - leftOffset - rightPadding, e.Bounds.Height - 8);
+                Rectangle nameRect = new Rectangle(e.Bounds.X + leftOffset, e.Bounds.Y + 4, e.Bounds.Width - leftOffset - badgeOffset, e.Bounds.Height - 8);
                 TextRenderer.DrawText(e.Graphics, item.Name, fontName, nameRect, textCol, TextFormatFlags.VerticalCenter | TextFormatFlags.Left | TextFormatFlags.EndEllipsis);
             }
+
+            int currentRight = e.Bounds.Right - 8;
 
             // Draw Hidden Badge if hidden
             if (!item.IsVisible)
@@ -1018,9 +1129,22 @@ namespace ExcelSheetManager.Views
                 using (var fontBadge = new Font("Segoe UI", 7.5f, FontStyle.Bold))
                 using (var badgeBg = new SolidBrush(Color.FromArgb(239, 68, 68))) // Red 500
                 {
-                    Rectangle badgeRect = new Rectangle(e.Bounds.Right - 52, e.Bounds.Y + 8, 46, 18);
+                    Rectangle badgeRect = new Rectangle(currentRight - 46, e.Bounds.Y + 8, 46, 18);
                     e.Graphics.FillRectangle(badgeBg, badgeRect);
                     TextRenderer.DrawText(e.Graphics, "Hidden", fontBadge, new Point(badgeRect.X + 5, badgeRect.Y + 2), Color.White);
+                    currentRight -= 50;
+                }
+            }
+
+            // Draw Lock Badge if protected
+            if (item.IsProtected)
+            {
+                using (var fontBadge = new Font("Segoe UI", 8f, FontStyle.Bold))
+                using (var badgeBg = new SolidBrush(Color.FromArgb(245, 158, 11))) // Amber 500
+                {
+                    Rectangle badgeRect = new Rectangle(currentRight - 26, e.Bounds.Y + 8, 24, 18);
+                    e.Graphics.FillRectangle(badgeBg, badgeRect);
+                    TextRenderer.DrawText(e.Graphics, "🔒", fontBadge, new Point(badgeRect.X + 4, badgeRect.Y + 1), Color.White);
                 }
             }
         }
