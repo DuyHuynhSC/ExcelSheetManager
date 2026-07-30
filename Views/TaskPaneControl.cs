@@ -17,7 +17,7 @@ namespace ExcelSheetManager.Views
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     [ProgId("ExcelSheetManager.TaskPaneControl")]
     [Guid("A5F19D34-9B05-4B82-94C3-7E4A8D9183C2")]
-    internal class TaskPaneControl : UserControl
+    public class TaskPaneControl : UserControl
     {
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, bool wParam, int lParam);
