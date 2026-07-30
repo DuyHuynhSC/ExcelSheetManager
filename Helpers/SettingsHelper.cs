@@ -9,6 +9,9 @@ namespace ExcelSheetManager.Helpers
         private const string KeyPath = @"SOFTWARE\ExcelSheetManager";
         private const string VisibilityValueName = "IsTaskPaneVisible";
         private const string ThemeValueName = "IsDarkTheme";
+        private const string AiBaseUrlValueName = "AiBaseUrl";
+        private const string AiApiKeyValueName = "AiApiKey";
+        private const string AiModelNameValueName = "AiModelName";
 
         private static string AppDataDir
         {
@@ -26,6 +29,7 @@ namespace ExcelSheetManager.Helpers
 
         private static string VisibilityFilePath => Path.Combine(AppDataDir, "taskpane_state.txt");
         private static string ThemeFilePath => Path.Combine(AppDataDir, "theme_state.txt");
+        private static string AiSettingsFilePath => Path.Combine(AppDataDir, "ai_settings.txt");
 
         public static bool GetIsTaskPaneVisible(bool defaultValue = true)
         {
@@ -113,6 +117,85 @@ namespace ExcelSheetManager.Helpers
             try
             {
                 File.WriteAllText(ThemeFilePath, isDark.ToString());
+            }
+            catch { }
+        }
+
+        // --- LOCAL OPENAI AI SETTINGS ---
+        public static string GetAiBaseUrl(string defaultValue = "http://localhost:11434/v1")
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(KeyPath);
+                if (key != null)
+                {
+                    object val = key.GetValue(AiBaseUrlValueName, defaultValue);
+                    if (val != null) return val.ToString();
+                }
+            }
+            catch { }
+
+            return defaultValue;
+        }
+
+        public static void SetAiBaseUrl(string baseUrl)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(KeyPath);
+                key?.SetValue(AiBaseUrlValueName, baseUrl, RegistryValueKind.String);
+            }
+            catch { }
+        }
+
+        public static string GetAiApiKey(string defaultValue = "local")
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(KeyPath);
+                if (key != null)
+                {
+                    object val = key.GetValue(AiApiKeyValueName, defaultValue);
+                    if (val != null) return val.ToString();
+                }
+            }
+            catch { }
+
+            return defaultValue;
+        }
+
+        public static void SetAiApiKey(string apiKey)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(KeyPath);
+                key?.SetValue(AiApiKeyValueName, apiKey, RegistryValueKind.String);
+            }
+            catch { }
+        }
+
+        public static string GetAiModelName(string defaultValue = "llama3")
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(KeyPath);
+                if (key != null)
+                {
+                    object val = key.GetValue(AiModelNameValueName, defaultValue);
+                    if (val != null) return val.ToString();
+                }
+            }
+            catch { }
+
+            return defaultValue;
+        }
+
+        public static void SetAiModelName(string modelName)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(KeyPath);
+                key?.SetValue(AiModelNameValueName, modelName, RegistryValueKind.String);
             }
             catch { }
         }

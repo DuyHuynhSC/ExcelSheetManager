@@ -52,6 +52,7 @@ namespace ExcelSheetManager.Views
         private Label _lblTitle = null!;
         private Button _btnRefresh = null!;
         private Button _btnTheme = null!;
+        private Button _btnAi = null!;
 
         private SplitContainer _splitContainer = null!;
 
@@ -158,6 +159,21 @@ namespace ExcelSheetManager.Views
             _btnTheme.FlatAppearance.BorderSize = 0;
             _btnTheme.Click += (s, e) => ToggleTheme();
 
+            // Local AI Assistant Button (Rose Pink #EC4899)
+            _btnAi = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 48,
+                Text = "🤖 AI",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(236, 72, 153),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnAi.FlatAppearance.BorderSize = 0;
+            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
+
             _lblTitle = new Label
             {
                 Dock = DockStyle.Left,
@@ -204,6 +220,7 @@ namespace ExcelSheetManager.Views
 
             _pnlHeader.Controls.Add(_btnRefresh);
             _pnlHeader.Controls.Add(_btnTheme);
+            _pnlHeader.Controls.Add(_btnAi);
             _pnlHeader.Controls.Add(_lblTitle);
             _mainTable.Controls.Add(_pnlHeader, 0, 0);
 

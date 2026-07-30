@@ -355,5 +355,25 @@ namespace ExcelSheetManager
                 QuickJumpForm.ShowForm();
             });
         }
+
+        [ExcelFunction(Description = "Ask Local OpenAI AI model a prompt with optional cell value", Category = "Excel Sheet Manager AI")]
+        public static object ASK_AI(string prompt, object cellValue)
+        {
+            return ExcelAsyncUtil.Run("ASK_AI", new object[] { prompt, cellValue }, () =>
+            {
+                try
+                {
+                    string valStr = (cellValue != null && cellValue is not ExcelDna.Integration.ExcelEmpty) ? cellValue.ToString() : string.Empty;
+                    string fullPrompt = string.IsNullOrEmpty(valStr) ? prompt : $"{prompt}: \"{valStr}\"";
+                    var task = System.Threading.Tasks.Task.Run(() => AiService.GetCompletionAsync(fullPrompt, "You are a helpful AI assistant integrated inside Microsoft Excel. Respond concisely."));
+                    task.Wait(15000);
+                    return task.Result;
+                }
+                catch (Exception ex)
+                {
+                    return $"#AI_ERROR: {ex.Message}";
+                }
+            });
+        }
     }
 }
