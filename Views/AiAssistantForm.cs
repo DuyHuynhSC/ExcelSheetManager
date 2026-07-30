@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Drawing;
 using System.Linq;
 using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using ExcelDna.Integration;
@@ -212,7 +213,8 @@ namespace ExcelSheetManager.Views
             _txtResponse.Text = "Reading Excel cells and generating AI response...";
 
             // Auto-extract cell content referenced in user prompt
-            string enrichedPrompt = EnrichPromptWithExcelCellData(prompt);
+            var (enrichedPrompt, logMessage) = EnrichPromptWithExcelCellData(prompt);
+            _lblStatus.Text = logMessage;
 
             string systemPrompt = _cmbMode.SelectedIndex switch
             {
@@ -226,7 +228,7 @@ namespace ExcelSheetManager.Views
             {
                 string result = await AiService.GetCompletionAsync(enrichedPrompt, systemPrompt);
                 _txtResponse.Text = result;
-                _lblStatus.Text = "AI Response received successfully.";
+                _lblStatus.Text = string.IsNullOrEmpty(logMessage) ? "AI Response received successfully." : logMessage;
                 _lblStatus.ForeColor = Color.FromArgb(16, 185, 129);
             }
             catch (Exception ex)
@@ -241,36 +243,42 @@ namespace ExcelSheetManager.Views
             }
         }
 
-        private string EnrichPromptWithExcelCellData(string userPrompt)
+        private (string EnrichedPrompt, string LogMessage) EnrichPromptWithExcelCellData(string userPrompt)
         {
             try
             {
                 var excelApp = (Excel.Application)ExcelDnaUtil.Application;
-                if (excelApp == null || excelApp.ActiveSheet == null) return userPrompt;
+                if (excelApp == null) return (userPrompt, "Excel connection unavailable.");
 
-                // Match cell references like B1, A1:C10, Sheet1!B1
-                var matches = System.Text.RegularExpressions.Regex.Matches(
+                // Regex matching cell references like B1, A1:C10 (optional prefix cell/ô)
+                var matches = Regex.Matches(
                     userPrompt,
-                    @"\b([A-Za-z]{1,3}[1-9][0-9]{0,6}(?::[A-Za-z]{1,3}[1-9][0-9]{0,6})?)\b",
-                    System.Text.RegularExpressions.RegexOptions.IgnoreCase
+                    @"(?:cell|ô|o)?\s*\b([A-Za-z]{1,3}[1-9][0-9]{0,5}(?::[A-Za-z]{1,3}[1-9][0-9]{0,5})?)\b",
+                    RegexOptions.IgnoreCase
                 );
 
                 List<string> foundRefs = new List<string>();
-                foreach (System.Text.RegularExpressions.Match m in matches)
+                foreach (Match m in matches)
                 {
-                    string val = m.Value.Trim();
-                    // Filter out common non-cell words
-                    if (val.Length == 1 || (val.Length <= 3 && !val.Any(char.IsDigit))) continue;
-                    if (!foundRefs.Contains(val, StringComparer.OrdinalIgnoreCase))
+                    if (m.Groups.Count > 1 && !string.IsNullOrEmpty(m.Groups[1].Value))
                     {
-                        foundRefs.Add(val);
+                        string cellRef = m.Groups[1].Value.Trim().ToUpper();
+                        // Filter out common non-cell short words
+                        if (cellRef.Length == 1 || (cellRef.Length <= 3 && !cellRef.Any(char.IsDigit))) continue;
+
+                        if (!foundRefs.Contains(cellRef, StringComparer.OrdinalIgnoreCase))
+                        {
+                            foundRefs.Add(cellRef);
+                        }
                     }
                 }
 
                 StringBuilder sb = new StringBuilder();
                 sb.AppendLine(userPrompt);
 
-                if (excelApp?.ActiveSheet is Excel.Worksheet activeWs)
+                List<string> readSummary = new List<string>();
+
+                if (excelApp.ActiveSheet is Excel.Worksheet activeWs)
                 {
                     bool addedContext = false;
 
@@ -281,16 +289,20 @@ namespace ExcelSheetManager.Views
                         {
                             try
                             {
-                                Excel.Range? range = activeWs.get_Range(cellRef);
+                                Excel.Range? range = activeWs.Range[cellRef];
                                 if (range != null)
                                 {
-                                    object raw = range.Value2;
+                                    object raw = range.Value2 ?? range.Value;
                                     string textVal = raw != null ? raw.ToString() : "(Ô trống)";
                                     sb.AppendLine($"[Cell {cellRef}]: \"{textVal}\"");
+                                    readSummary.Add($"{cellRef}=\"{textVal}\"");
                                     addedContext = true;
                                 }
                             }
-                            catch { }
+                            catch (Exception ex)
+                            {
+                                readSummary.Add($"{cellRef}=(Error: {ex.Message})");
+                            }
                         }
                     }
 
@@ -300,22 +312,28 @@ namespace ExcelSheetManager.Views
                         try
                         {
                             Excel.Range activeCell = excelApp.ActiveCell;
-                            object raw = activeCell.Value2;
+                            object raw = activeCell.Value2 ?? activeCell.Value;
                             if (raw != null && !string.IsNullOrEmpty(raw.ToString()))
                             {
+                                string addr = activeCell.Address[false, false];
                                 sb.AppendLine("\n--- DỮ LIỆU ĐỌC TỰ ĐỘNG TỪ Ô ĐANG CHỌN ---");
-                                sb.AppendLine($"[Cell {activeCell.Address[false, false]}]: \"{raw}\"");
+                                sb.AppendLine($"[Cell {addr}]: \"{raw}\"");
+                                readSummary.Add($"Active {addr}=\"{raw}\"");
                             }
                         }
                         catch { }
                     }
                 }
 
-                return sb.ToString();
+                string statusMsg = readSummary.Count > 0
+                    ? $"✓ Read Excel: {string.Join(", ", readSummary)}"
+                    : "No Excel cells referenced or active cell is empty.";
+
+                return (sb.ToString(), statusMsg);
             }
-            catch
+            catch (Exception ex)
             {
-                return userPrompt;
+                return (userPrompt, $"Excel read error: {ex.Message}");
             }
         }
 
