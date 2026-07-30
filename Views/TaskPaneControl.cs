@@ -68,7 +68,13 @@ namespace ExcelSheetManager.Views
         private TextBox _txtFilterSheet = null!;
         private ListBox _lstSheets = null!;
 
-        // Context Menu
+        // Context Menu Vung 1 (Workbook)
+        private ContextMenuStrip _cmsWorkbookMenu = null!;
+        private ToolStripMenuItem _miCopyWbName = null!;
+        private ToolStripMenuItem _miCopyWbPath = null!;
+        private ToolStripMenuItem _miOpenFolder = null!;
+
+        // Context Menu Vung 2 (Sheet)
         private ContextMenuStrip _cmsSheetMenu = null!;
         private ToolStripMenuItem _miProtectSheet = null!;
         private ToolStripMenuItem _miCopyName = null!;
@@ -259,6 +265,23 @@ namespace ExcelSheetManager.Views
             };
             _lstWorkbooks.DrawItem += DrawWorkbookItem;
             _lstWorkbooks.SelectedIndexChanged += LstWorkbooks_SelectedIndexChanged;
+            _lstWorkbooks.MouseDown += LstWorkbooks_MouseDown;
+
+            // Vung 1 Workbook Context Menu
+            _cmsWorkbookMenu = new ContextMenuStrip();
+            _miCopyWbName = new ToolStripMenuItem("📋 Copy File Name");
+            _miCopyWbName.Click += (s, e) => CopySelectedWorkbookName();
+
+            _miCopyWbPath = new ToolStripMenuItem("📁 Copy Full File Path");
+            _miCopyWbPath.Click += (s, e) => CopySelectedWorkbookPath();
+
+            _miOpenFolder = new ToolStripMenuItem("📂 Open File Location");
+            _miOpenFolder.Click += (s, e) => OpenSelectedWorkbookFolder();
+
+            _cmsWorkbookMenu.Items.Add(_miCopyWbName);
+            _cmsWorkbookMenu.Items.Add(_miCopyWbPath);
+            _cmsWorkbookMenu.Items.Add(new ToolStripSeparator());
+            _cmsWorkbookMenu.Items.Add(_miOpenFolder);
 
             _tblVung1.Controls.Add(_pnlVung1Header, 0, 0);
             _tblVung1.Controls.Add(_lstWorkbooks, 0, 1);
@@ -435,8 +458,72 @@ namespace ExcelSheetManager.Views
 
             // ADD ROOT TABLE TO CONTROL
             this.Controls.Add(_mainTable);
-
             this.ResumeLayout(false);
+        }
+
+        private void LstWorkbooks_MouseDown(object? sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+                int index = _lstWorkbooks.IndexFromPoint(e.Location);
+                if (index >= 0 && index < _lstWorkbooks.Items.Count)
+                {
+                    _lstWorkbooks.SelectedIndex = index;
+                    _cmsWorkbookMenu.Show(_lstWorkbooks, e.Location);
+                }
+            }
+        }
+
+        private void CopySelectedWorkbookName()
+        {
+            try
+            {
+                if (_selectedWorkbook != null)
+                {
+                    Clipboard.SetText(_selectedWorkbook.Name);
+                    _lblStatus.Text = $"Copied file name: \"{_selectedWorkbook.Name}\"";
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not copy file name: {ex.Message}";
+            }
+        }
+
+        private void CopySelectedWorkbookPath()
+        {
+            try
+            {
+                if (_selectedWorkbook != null && !string.IsNullOrEmpty(_selectedWorkbook.FullPath))
+                {
+                    Clipboard.SetText(_selectedWorkbook.FullPath);
+                    _lblStatus.Text = $"Copied file path: \"{_selectedWorkbook.FullPath}\"";
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not copy file path: {ex.Message}";
+            }
+        }
+
+        private void OpenSelectedWorkbookFolder()
+        {
+            try
+            {
+                if (_selectedWorkbook != null && !string.IsNullOrEmpty(_selectedWorkbook.FullPath) && File.Exists(_selectedWorkbook.FullPath))
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{_selectedWorkbook.FullPath}\"");
+                    _lblStatus.Text = $"Opened file location in Windows Explorer";
+                }
+                else
+                {
+                    _lblStatus.Text = "File has not been saved to disk yet.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not open folder: {ex.Message}";
+            }
         }
 
         private void LstSheets_MouseDown(object? sender, MouseEventArgs e)
