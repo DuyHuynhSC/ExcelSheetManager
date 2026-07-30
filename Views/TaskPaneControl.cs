@@ -17,7 +17,7 @@ namespace ExcelSheetManager.Views
     [ClassInterface(ClassInterfaceType.AutoDispatch)]
     [ProgId("ExcelSheetManager.TaskPaneControl")]
     [Guid("A5F19D34-9B05-4B82-94C3-7E4A8D9183C2")]
-    public class TaskPaneControl : UserControl
+    internal class TaskPaneControl : UserControl
     {
         [DllImport("user32.dll")]
         private static extern IntPtr SendMessage(IntPtr hWnd, int msg, bool wParam, int lParam);
@@ -48,16 +48,14 @@ namespace ExcelSheetManager.Views
         private TableLayoutPanel _tblVung2 = null!;
 
         // Controls
-        private Panel _pnlHeader = null!;
-        private Label _lblTitle = null!;
-        private Button _btnRefresh = null!;
-        private Button _btnTheme = null!;
-        private Button _btnAi = null!;
-
         private SplitContainer _splitContainer = null!;
 
         private Panel _pnlVung1Header = null!;
+        private Panel _pnlVung1Top = null!;
         private Label _lblVung1Title = null!;
+        private Button _btnRefresh = null!;
+        private Button _btnTheme = null!;
+        private Button _btnAi = null!;
         private TextBox _txtFilterFile = null!;
         private ListBox _lstWorkbooks = null!;
 
@@ -109,122 +107,21 @@ namespace ExcelSheetManager.Views
         {
             this.SuspendLayout();
 
-            // 1. ROOT TABLE LAYOUT PANEL (3 ROWS: HEADER 38px, CONTENT 100%, FOOTER 24px)
+            // 1. ROOT TABLE LAYOUT PANEL (2 ROWS: CONTENT 100%, FOOTER 24px)
+            // Title moved to Excel's native TaskPane Header to maximize vertical space for Vung 1 and Vung 2!
             _mainTable = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 3,
+                RowCount = 2,
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
             _mainTable.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            _mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 38f)); // Row 0: Header
-            _mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 1: SplitContainer
-            _mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f)); // Row 2: Status Footer
+            _mainTable.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));  // Row 0: SplitContainer
+            _mainTable.RowStyles.Add(new RowStyle(SizeType.Absolute, 24f)); // Row 1: Status Footer
 
-            // 2. HEADER TOOLBAR PANEL (ROW 0)
-            _pnlHeader = new Panel
-            {
-                Dock = DockStyle.Fill,
-                Margin = new Padding(0),
-                Padding = new Padding(6, 4, 6, 4)
-            };
-
-            // Local AI Assistant Button (Rose Pink #EC4899)
-            _btnAi = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 45,
-                Text = "AI",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(236, 72, 153),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnAi.FlatAppearance.BorderSize = 0;
-            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
-
-            // Theme Toggle Button
-            _btnTheme = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 58,
-                Text = _isDarkTheme ? "Light" : "Dark",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnTheme.FlatAppearance.BorderSize = 0;
-            _btnTheme.Click += (s, e) => ToggleTheme();
-
-            // Refresh Button
-            _btnRefresh = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 60,
-                Text = "Refresh",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(59, 130, 246),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnRefresh.FlatAppearance.BorderSize = 0;
-            _btnRefresh.Click += (s, e) => RefreshData();
-
-            _lblTitle = new Label
-            {
-                Dock = DockStyle.Left,
-                Width = 125,
-                BackColor = Color.Transparent
-            };
-
-            // Custom GDI+ Vibrant Multi-Color Bar Chart Icon Painting
-            _lblTitle.Paint += (s, pe) =>
-            {
-                pe.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
-
-                // Bar 1 - Bright Sky Blue (#0099FF)
-                using (var b1 = new SolidBrush(Color.FromArgb(0, 153, 255)))
-                {
-                    pe.Graphics.FillRectangle(b1, 2, 14, 4, 8);
-                }
-
-                // Bar 2 - Vibrant Emerald Green (#10B981)
-                using (var b2 = new SolidBrush(Color.FromArgb(16, 185, 129)))
-                {
-                    pe.Graphics.FillRectangle(b2, 8, 10, 4, 12);
-                }
-
-                // Bar 3 - Warm Amber / Gold (#F59E0B)
-                using (var b3 = new SolidBrush(Color.FromArgb(245, 158, 11)))
-                {
-                    pe.Graphics.FillRectangle(b3, 14, 6, 4, 16);
-                }
-
-                // Bar 4 - Bright Rose Pink (#EC4899)
-                using (var b4 = new SolidBrush(Color.FromArgb(236, 72, 153)))
-                {
-                    pe.Graphics.FillRectangle(b4, 20, 2, 4, 20);
-                }
-
-                // Draw NAVIGATION Text
-                Color titleColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42);
-                using (var font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
-                {
-                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(28, 4), titleColor);
-                }
-            };
-
-            _pnlHeader.Controls.Add(_btnAi);       // Far Right
-            _pnlHeader.Controls.Add(_btnTheme);    // Middle Right
-            _pnlHeader.Controls.Add(_btnRefresh);  // Left of Theme
-            _pnlHeader.Controls.Add(_lblTitle);    // Left
-            _mainTable.Controls.Add(_pnlHeader, 0, 0);
-
-            // 3. STATUS LABEL (ROW 2 - FOOTER)
+            // 2. STATUS LABEL (ROW 1 - FOOTER)
             _lblStatus = new Label
             {
                 Dock = DockStyle.Fill,
@@ -234,9 +131,9 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(8, 0, 0, 0),
                 Text = "Ready"
             };
-            _mainTable.Controls.Add(_lblStatus, 0, 2);
+            _mainTable.Controls.Add(_lblStatus, 0, 1);
 
-            // 4. SPLIT CONTAINER (ROW 1 - CONTENT)
+            // 3. SPLIT CONTAINER (ROW 0 - CONTENT)
             _splitContainer = new SplitContainer
             {
                 Dock = DockStyle.Fill,
@@ -267,14 +164,78 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(6, 4, 6, 4)
             };
 
+            _pnlVung1Top = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 24,
+                Margin = new Padding(0)
+            };
+
             _lblVung1Title = new Label
             {
                 Text = "OPEN FILES",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(56, 189, 248),
-                Dock = DockStyle.Top,
-                Height = 22
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleLeft
             };
+
+            // AI Assistant Button (Far Right of Vung 1 - Rose Pink #EC4899)
+            _btnAi = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 36,
+                Text = "AI",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(236, 72, 153),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnAi.FlatAppearance.BorderSize = 0;
+            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
+
+            // 4px Gap
+            Panel spacerV1_1 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+
+            // Theme Toggle Button (Middle Right of Vung 1)
+            _btnTheme = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 52,
+                Text = _isDarkTheme ? "Light" : "Dark",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnTheme.FlatAppearance.BorderSize = 0;
+            _btnTheme.Click += (s, e) => ToggleTheme();
+
+            // 4px Gap
+            Panel spacerV1_2 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+
+            // Refresh Button (Left of Theme in Vung 1 - Blue #3B82F6)
+            _btnRefresh = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 58,
+                Text = "Refresh",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(59, 130, 246),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnRefresh.FlatAppearance.BorderSize = 0;
+            _btnRefresh.Click += (s, e) => RefreshData();
+
+            _pnlVung1Top.Controls.Add(_lblVung1Title);
+            _pnlVung1Top.Controls.Add(_btnAi);         // Far Right (AI)
+            _pnlVung1Top.Controls.Add(spacerV1_1);      // Gap
+            _pnlVung1Top.Controls.Add(_btnTheme);       // Middle (Theme)
+            _pnlVung1Top.Controls.Add(spacerV1_2);      // Gap
+            _pnlVung1Top.Controls.Add(_btnRefresh);     // Left (Refresh)
 
             _txtFilterFile = new TextBox
             {
@@ -285,7 +246,7 @@ namespace ExcelSheetManager.Views
             };
             _txtFilterFile.TextChanged += (s, e) => FilterWorkbooksList();
 
-            _pnlVung1Header.Controls.Add(_lblVung1Title);
+            _pnlVung1Header.Controls.Add(_pnlVung1Top);
             _pnlVung1Header.Controls.Add(_txtFilterFile);
 
             _lstWorkbooks = new ListBox
@@ -356,7 +317,7 @@ namespace ExcelSheetManager.Views
             _btnCopySheetName.Click += (s, e) => CopySelectedSheetName();
 
             // 4px Physical Gap 1
-            Panel spacer1 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+            Panel spacerV2_1 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
 
             // Hide/Show Filter Button (Toggles List View Filtering of Hidden Sheets - Sky Blue #0284C7)
             _btnToggleHidden = new Button
@@ -374,7 +335,7 @@ namespace ExcelSheetManager.Views
             _btnToggleHidden.Click += (s, e) => ToggleHiddenSheetsListFilter();
 
             // 4px Physical Gap 2
-            Panel spacer2 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+            Panel spacerV2_2 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
 
             // Table of Contents Generator Button (Feature 2 - Purple #8B5CF6)
             _btnToc = new Button
@@ -393,9 +354,9 @@ namespace ExcelSheetManager.Views
 
             _pnlVung2Top.Controls.Add(_lblVung2Title);
             _pnlVung2Top.Controls.Add(_btnCopySheetName);  // Far Right (Green)
-            _pnlVung2Top.Controls.Add(spacer1);            // Gap
+            _pnlVung2Top.Controls.Add(spacerV2_1);          // Gap
             _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Middle (Blue)
-            _pnlVung2Top.Controls.Add(spacer2);            // Gap
+            _pnlVung2Top.Controls.Add(spacerV2_2);          // Gap
             _pnlVung2Top.Controls.Add(_btnToc);            // Left of Hide/Show (Purple)
 
             _txtFilterSheet = new TextBox
@@ -470,7 +431,7 @@ namespace ExcelSheetManager.Views
             _tblVung2.Controls.Add(_lstSheets, 0, 1);
             _splitContainer.Panel2.Controls.Add(_tblVung2);
 
-            _mainTable.Controls.Add(_splitContainer, 0, 1);
+            _mainTable.Controls.Add(_splitContainer, 0, 0);
 
             // ADD ROOT TABLE TO CONTROL
             this.Controls.Add(_mainTable);
@@ -516,11 +477,16 @@ namespace ExcelSheetManager.Views
             this.ForeColor = _textColor;
 
             _mainTable.BackColor = _bgColor;
-            _pnlHeader.BackColor = _cardColor;
 
             _btnTheme.Text = _isDarkTheme ? "Light" : "Dark";
             _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(30, 41, 59);
             _btnTheme.ForeColor = Color.White;
+
+            _btnRefresh.BackColor = Color.FromArgb(59, 130, 246); // Sky Blue
+            _btnRefresh.ForeColor = Color.White;
+
+            _btnAi.BackColor = Color.FromArgb(236, 72, 153); // Rose Pink
+            _btnAi.ForeColor = Color.White;
 
             _btnToggleHidden.BackColor = Color.FromArgb(2, 132, 199);  // Sky Blue
             _btnToggleHidden.ForeColor = Color.White;
@@ -552,7 +518,6 @@ namespace ExcelSheetManager.Views
 
             _lstWorkbooks.Invalidate();
             _lstSheets.Invalidate();
-            _lblTitle.Invalidate();
         }
 
         protected override void OnLoad(EventArgs e)
@@ -992,7 +957,6 @@ namespace ExcelSheetManager.Views
                 const string tocSheetName = "MUC_LUC";
                 Excel.Worksheet? tocWs = null;
 
-                // Check if MUC_LUC sheet already exists
                 foreach (Excel.Worksheet sheet in wb.Worksheets)
                 {
                     if (sheet.Name.Equals(tocSheetName, StringComparison.OrdinalIgnoreCase))
@@ -1004,18 +968,14 @@ namespace ExcelSheetManager.Views
 
                 if (tocWs == null)
                 {
-                    // Add new sheet at first position
                     Excel.Worksheet firstWs = (Excel.Worksheet)wb.Worksheets[1];
                     tocWs = (Excel.Worksheet)wb.Worksheets.Add(firstWs, Type.Missing, Type.Missing, Type.Missing);
                     tocWs.Name = tocSheetName;
                 }
 
                 tocWs.Activate();
-
-                // Clear contents
                 tocWs.Cells.Clear();
 
-                // Title Banner
                 Excel.Range titleRange = tocWs.get_Range("A1", "E1");
                 titleRange.Merge();
                 titleRange.Value2 = "📑 BẢNG MỤC LỤC SỔ TÍNH (TABLE OF CONTENTS)";
@@ -1027,7 +987,6 @@ namespace ExcelSheetManager.Views
                 titleRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
                 titleRange.RowHeight = 32;
 
-                // Table Header Row
                 string[] headers = { "STT", "TÊN SHEET (CLICK NHẢY TRANG)", "MÀU TAB", "TRẠNG THÁI", "BẢO VỆ" };
                 for (int c = 0; c < headers.Length; c++)
                 {
@@ -1042,25 +1001,21 @@ namespace ExcelSheetManager.Views
                 }
                 ((Excel.Range)tocWs.get_Range("A3", "E3")).RowHeight = 24;
 
-                // Loop through sheets
                 int rowIndex = 4;
                 int stt = 1;
                 foreach (Excel.Worksheet sheet in wb.Worksheets)
                 {
                     if (sheet.Name.Equals(tocSheetName, StringComparison.OrdinalIgnoreCase)) continue;
 
-                    // STT
                     Excel.Range cellStt = (Excel.Range)tocWs.Cells[rowIndex, 1];
                     cellStt.Value2 = stt++;
                     cellStt.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
 
-                    // Hyperlinked Sheet Name
                     Excel.Range cellName = (Excel.Range)tocWs.Cells[rowIndex, 2];
                     tocWs.Hyperlinks.Add(cellName, "", $"'{sheet.Name}'!A1", Type.Missing, sheet.Name);
                     cellName.Font.Bold = true;
                     cellName.Font.Size = 10;
 
-                    // Tab Color
                     Excel.Range cellColor = (Excel.Range)tocWs.Cells[rowIndex, 3];
                     var (colorHex, hasCustom) = ColorHelper.GetSheetTabColorHex(sheet);
                     cellColor.Value2 = colorHex;
@@ -1075,12 +1030,10 @@ namespace ExcelSheetManager.Views
                         catch { }
                     }
 
-                    // Visibility Status
                     Excel.Range cellVis = (Excel.Range)tocWs.Cells[rowIndex, 4];
                     cellVis.Value2 = sheet.Visible == Excel.XlSheetVisibility.xlSheetVisible ? "Hiện" : "Ẩn";
                     cellVis.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
 
-                    // Protection Status
                     Excel.Range cellProt = (Excel.Range)tocWs.Cells[rowIndex, 5];
                     cellProt.Value2 = sheet.ProtectContents ? "🔒 Khóa" : "Bình thường";
                     cellProt.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
@@ -1089,7 +1042,6 @@ namespace ExcelSheetManager.Views
                     rowIndex++;
                 }
 
-                // Format Table Columns AutoFit
                 Excel.Range fullTable = tocWs.get_Range("A3", $"E{rowIndex - 1}");
                 fullTable.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
                 fullTable.Columns.AutoFit();
@@ -1131,7 +1083,6 @@ namespace ExcelSheetManager.Views
                     sheetsList = sheetsList.OrderBy(s => ColorHelper.GetSheetTabColorHex(s).Hex).ToList();
                 }
 
-                // Move sheets in Excel order
                 for (int i = 0; i < sheetsList.Count; i++)
                 {
                     if (i == 0)
@@ -1326,7 +1277,6 @@ namespace ExcelSheetManager.Views
                     }
                 }
 
-                // Synchronize selection across all TaskPanes so File Tháng 06's TaskPane highlights File Tháng 06!
                 AddIn.SyncSelectedWorkbookInAllTaskPanes(item.Name);
 
                 _lblStatus.Text = $"Activated file: {item.Name}";
@@ -1406,16 +1356,13 @@ namespace ExcelSheetManager.Views
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Draw Card Background
             using (var brush = new SolidBrush(itemBg))
             {
                 e.Graphics.FillRectangle(brush, new Rectangle(e.Bounds.X + 2, e.Bounds.Y + 2, e.Bounds.Width - 4, e.Bounds.Height - 4));
             }
 
-            // Draw Icon
             TextRenderer.DrawText(e.Graphics, "📄", new Font("Segoe UI", 10.5f), new Point(e.Bounds.X + 6, e.Bounds.Y + 7), itemText);
 
-            // Draw File Name across full width with EndEllipsis
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
                 Rectangle nameRect = new Rectangle(e.Bounds.X + 30, e.Bounds.Y + 4, e.Bounds.Width - 36, e.Bounds.Height - 8);
@@ -1436,13 +1383,12 @@ namespace ExcelSheetManager.Views
 
             if (isSelected)
             {
-                itemBg = Color.FromArgb(79, 70, 229); // Indigo 600 if selected
+                itemBg = Color.FromArgb(79, 70, 229);
                 textCol = Color.White;
             }
             else if (item.HasCustomTabColor)
             {
                 itemBg = tabColor;
-                // High contrast text color calculation
                 double brightness = (tabColor.R * 0.299 + tabColor.G * 0.587 + tabColor.B * 0.114);
                 textCol = brightness > 160 ? Color.FromArgb(15, 23, 42) : Color.White;
             }
@@ -1454,13 +1400,11 @@ namespace ExcelSheetManager.Views
 
             e.Graphics.SmoothingMode = SmoothingMode.AntiAlias;
 
-            // Draw Card Background
             using (var brush = new SolidBrush(itemBg))
             {
                 e.Graphics.FillRectangle(brush, new Rectangle(e.Bounds.X + 2, e.Bounds.Y + 2, e.Bounds.Width - 4, e.Bounds.Height - 4));
             }
 
-            // Draw subtle vertical tab color strip only for non-custom cards
             if (!item.HasCustomTabColor && !isSelected)
             {
                 using (var tabBrush = new SolidBrush(tabColor))
@@ -1469,12 +1413,10 @@ namespace ExcelSheetManager.Views
                 }
             }
 
-            // Calculate right badges offset
             int badgeOffset = 10;
             if (!item.IsVisible) badgeOffset += 52;
             if (item.IsProtected) badgeOffset += 32;
 
-            // Draw Sheet Name across full width
             int leftOffset = (item.HasCustomTabColor || isSelected) ? 10 : 18;
             using (var fontName = new Font("Segoe UI", 9.5f, FontStyle.Bold))
             {
@@ -1484,11 +1426,10 @@ namespace ExcelSheetManager.Views
 
             int currentRight = e.Bounds.Right - 8;
 
-            // Draw Hidden Badge if hidden
             if (!item.IsVisible)
             {
                 using (var fontBadge = new Font("Segoe UI", 7.5f, FontStyle.Bold))
-                using (var badgeBg = new SolidBrush(Color.FromArgb(239, 68, 68))) // Red 500
+                using (var badgeBg = new SolidBrush(Color.FromArgb(239, 68, 68)))
                 {
                     Rectangle badgeRect = new Rectangle(currentRight - 46, e.Bounds.Y + 8, 46, 18);
                     e.Graphics.FillRectangle(badgeBg, badgeRect);
@@ -1497,11 +1438,10 @@ namespace ExcelSheetManager.Views
                 }
             }
 
-            // Draw Lock Badge if protected
             if (item.IsProtected)
             {
                 using (var fontBadge = new Font("Segoe UI", 8f, FontStyle.Bold))
-                using (var badgeBg = new SolidBrush(Color.FromArgb(245, 158, 11))) // Amber 500
+                using (var badgeBg = new SolidBrush(Color.FromArgb(245, 158, 11)))
                 {
                     Rectangle badgeRect = new Rectangle(currentRight - 26, e.Bounds.Y + 8, 24, 18);
                     e.Graphics.FillRectangle(badgeBg, badgeRect);
