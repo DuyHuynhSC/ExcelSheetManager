@@ -3,7 +3,7 @@ using Microsoft.Office.Interop.Excel;
 
 namespace ExcelSheetManager.Helpers
 {
-    public static class ColorHelper
+    internal static class ColorHelper
     {
         /// <summary>
         /// Converts Excel Tab OLE Color (BGR) to RGB Hex string "#RRGGBB"

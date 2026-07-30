@@ -6,7 +6,7 @@ using System.Threading.Tasks;
 
 namespace ExcelSheetManager.Helpers
 {
-    public static class AiService
+    internal static class AiService
     {
         public static string GetEndpointUrl()
         {

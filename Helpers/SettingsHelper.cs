@@ -4,7 +4,7 @@ using Microsoft.Win32;
 
 namespace ExcelSheetManager.Helpers
 {
-    public static class SettingsHelper
+    internal static class SettingsHelper
     {
         private const string KeyPath = @"SOFTWARE\ExcelSheetManager";
         private const string VisibilityValueName = "IsTaskPaneVisible";

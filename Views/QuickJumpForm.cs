@@ -12,7 +12,7 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace ExcelSheetManager.Views
 {
-    public class QuickJumpForm : Form
+    internal class QuickJumpForm : Form
     {
         [DllImport("user32.dll")]
         private static extern bool SetForegroundWindow(IntPtr hWnd);
@@ -22,7 +22,7 @@ namespace ExcelSheetManager.Views
 
         private static QuickJumpForm? _currentInstance;
 
-        public static void ShowForm()
+        internal static void ShowForm()
         {
             try
             {

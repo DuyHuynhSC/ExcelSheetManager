@@ -6,7 +6,7 @@ using ExcelSheetManager.Helpers;
 
 namespace ExcelSheetManager.Views
 {
-    public class AiSettingsForm : Form
+    internal class AiSettingsForm : Form
     {
         private TextBox _txtBaseUrl = null!;
         private TextBox _txtApiKey = null!;

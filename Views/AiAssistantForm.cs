@@ -8,11 +8,11 @@ using Excel = Microsoft.Office.Interop.Excel;
 
 namespace ExcelSheetManager.Views
 {
-    public class AiAssistantForm : Form
+    internal class AiAssistantForm : Form
     {
         private static AiAssistantForm? _currentInstance;
 
-        public static void ShowForm()
+        internal static void ShowForm()
         {
             try
             {
