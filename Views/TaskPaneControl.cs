@@ -811,6 +811,8 @@ namespace ExcelSheetManager.Views
                 {
                     _lstSheets.Items.Add(item);
                 }
+
+                _lblVung2Title.Text = $"SHEETS ({_lstSheets.Items.Count})";
             }
             finally
             {
