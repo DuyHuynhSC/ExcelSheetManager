@@ -865,6 +865,7 @@ namespace ExcelSheetManager.Views
                 }
 
                 _lblVung2Title.Text = $"SHEETS ({_lstSheets.Items.Count})";
+                SelectActiveSheetInList();
             }
             finally
             {
@@ -874,6 +875,25 @@ namespace ExcelSheetManager.Views
                     SendMessage(_lstSheets.Handle, WM_SETREDRAW, true, 0);
                     _lstSheets.Invalidate();
                 }
+            }
+        }
+
+        private void SelectActiveSheetInList()
+        {
+            int activeIdx = -1;
+            for (int i = 0; i < _lstSheets.Items.Count; i++)
+            {
+                if (_lstSheets.Items[i] is SheetItem sheetItem && sheetItem.IsActive)
+                {
+                    activeIdx = i;
+                    break;
+                }
+            }
+
+            if (activeIdx >= 0 && activeIdx < _lstSheets.Items.Count)
+            {
+                _lstSheets.SelectedIndex = activeIdx;
+                _lstSheets.Invalidate();
             }
         }
 
