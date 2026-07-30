@@ -131,11 +131,39 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(6, 4, 6, 4)
             };
 
-            // Refresh Button (Far Right)
+            // Local AI Assistant Button (Rose Pink #EC4899)
+            _btnAi = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 45,
+                Text = "AI",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(236, 72, 153),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnAi.FlatAppearance.BorderSize = 0;
+            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
+
+            // Theme Toggle Button
+            _btnTheme = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 58,
+                Text = _isDarkTheme ? "Light" : "Dark",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnTheme.FlatAppearance.BorderSize = 0;
+            _btnTheme.Click += (s, e) => ToggleTheme();
+
+            // Refresh Button
             _btnRefresh = new Button
             {
                 Dock = DockStyle.Right,
-                Width = 65,
+                Width = 60,
                 Text = "Refresh",
                 Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
                 ForeColor = Color.White,
@@ -146,38 +174,10 @@ namespace ExcelSheetManager.Views
             _btnRefresh.FlatAppearance.BorderSize = 0;
             _btnRefresh.Click += (s, e) => RefreshData();
 
-            // Theme Toggle Button (Next to Refresh)
-            _btnTheme = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 65,
-                Text = _isDarkTheme ? "Light" : "Dark",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnTheme.FlatAppearance.BorderSize = 0;
-            _btnTheme.Click += (s, e) => ToggleTheme();
-
-            // Local AI Assistant Button (Rose Pink #EC4899)
-            _btnAi = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 48,
-                Text = "🤖 AI",
-                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(236, 72, 153),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnAi.FlatAppearance.BorderSize = 0;
-            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
-
             _lblTitle = new Label
             {
                 Dock = DockStyle.Left,
-                Width = 145,
+                Width = 125,
                 BackColor = Color.Transparent
             };
 
@@ -189,39 +189,39 @@ namespace ExcelSheetManager.Views
                 // Bar 1 - Bright Sky Blue (#0099FF)
                 using (var b1 = new SolidBrush(Color.FromArgb(0, 153, 255)))
                 {
-                    pe.Graphics.FillRectangle(b1, 4, 18, 4, 8);
+                    pe.Graphics.FillRectangle(b1, 2, 14, 4, 8);
                 }
 
                 // Bar 2 - Vibrant Emerald Green (#10B981)
                 using (var b2 = new SolidBrush(Color.FromArgb(16, 185, 129)))
                 {
-                    pe.Graphics.FillRectangle(b2, 10, 14, 4, 12);
+                    pe.Graphics.FillRectangle(b2, 8, 10, 4, 12);
                 }
 
                 // Bar 3 - Warm Amber / Gold (#F59E0B)
                 using (var b3 = new SolidBrush(Color.FromArgb(245, 158, 11)))
                 {
-                    pe.Graphics.FillRectangle(b3, 16, 10, 4, 16);
+                    pe.Graphics.FillRectangle(b3, 14, 6, 4, 16);
                 }
 
                 // Bar 4 - Bright Rose Pink (#EC4899)
                 using (var b4 = new SolidBrush(Color.FromArgb(236, 72, 153)))
                 {
-                    pe.Graphics.FillRectangle(b4, 22, 6, 4, 20);
+                    pe.Graphics.FillRectangle(b4, 20, 2, 4, 20);
                 }
 
                 // Draw NAVIGATION Text
                 Color titleColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42);
                 using (var font = new Font("Segoe UI", 9.5f, FontStyle.Bold))
                 {
-                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(30, 6), titleColor);
+                    TextRenderer.DrawText(pe.Graphics, "NAVIGATION", font, new Point(28, 4), titleColor);
                 }
             };
 
-            _pnlHeader.Controls.Add(_btnRefresh);
-            _pnlHeader.Controls.Add(_btnTheme);
-            _pnlHeader.Controls.Add(_btnAi);
-            _pnlHeader.Controls.Add(_lblTitle);
+            _pnlHeader.Controls.Add(_btnAi);       // Far Right
+            _pnlHeader.Controls.Add(_btnTheme);    // Middle Right
+            _pnlHeader.Controls.Add(_btnRefresh);  // Left of Theme
+            _pnlHeader.Controls.Add(_lblTitle);    // Left
             _mainTable.Controls.Add(_pnlHeader, 0, 0);
 
             // 3. STATUS LABEL (ROW 2 - FOOTER)
