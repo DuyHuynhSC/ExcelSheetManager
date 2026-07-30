@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Drawing;
 using System.Drawing.Drawing2D;
+using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Windows.Forms;
@@ -32,6 +33,7 @@ namespace ExcelSheetManager.Views
 
         // Theme Flag & Colors
         private bool _isDarkTheme = true;
+        private bool _showHiddenSheetsInList = true; // Toggle for Vung 2 filter list
 
         private Color _bgColor;
         private Color _cardColor;
@@ -61,15 +63,26 @@ namespace ExcelSheetManager.Views
         private Panel _pnlVung2Header = null!;
         private Panel _pnlVung2Top = null!;
         private Label _lblVung2Title = null!;
+        private Button _btnToc = null!;
         private Button _btnToggleHidden = null!;
         private Button _btnCopySheetName = null!;
         private TextBox _txtFilterSheet = null!;
         private ListBox _lstSheets = null!;
 
+        // Context Menu
         private ContextMenuStrip _cmsSheetMenu = null!;
         private ToolStripMenuItem _miProtectSheet = null!;
         private ToolStripMenuItem _miCopyName = null!;
-        private ToolStripMenuItem _miToggleHide = null!;
+        private ToolStripMenuItem _miToggleHideExcel = null!;
+        private ToolStripMenuItem _miChangeTabColor = null!;
+        private ToolStripMenuItem _miClearTabColor = null!;
+        private ToolStripMenuItem _miSortMenu = null!;
+        private ToolStripMenuItem _miSortAZ = null!;
+        private ToolStripMenuItem _miSortZA = null!;
+        private ToolStripMenuItem _miSortColor = null!;
+        private ToolStripMenuItem _miExportMenu = null!;
+        private ToolStripMenuItem _miExportPdf = null!;
+        private ToolStripMenuItem _miExportExcel = null!;
 
         private Label _lblStatus = null!;
 
@@ -310,7 +323,7 @@ namespace ExcelSheetManager.Views
                 TextAlign = ContentAlignment.MiddleLeft
             };
 
-            // Copy Sheet Name Button (Far Right - Emerald Green #10B981)
+            // Copy Sheet Name Button (Far Right - Emerald Green #16A34A)
             _btnCopySheetName = new Button
             {
                 Dock = DockStyle.Right,
@@ -325,15 +338,10 @@ namespace ExcelSheetManager.Views
             _btnCopySheetName.FlatAppearance.BorderSize = 0;
             _btnCopySheetName.Click += (s, e) => CopySelectedSheetName();
 
-            // 4px Physical Gap Spacer between buttons
-            Panel spacer = new Panel
-            {
-                Dock = DockStyle.Right,
-                Width = 4,
-                BackColor = Color.Transparent
-            };
+            // 4px Physical Gap 1
+            Panel spacer1 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
 
-            // Hide/Show Hidden Sheets Button (Width 78px to fit "Hide/Show" completely - Sky Blue #0284C7)
+            // Hide/Show Filter Button (Toggles List View Filtering of Hidden Sheets - Sky Blue #0284C7)
             _btnToggleHidden = new Button
             {
                 Dock = DockStyle.Right,
@@ -346,12 +354,32 @@ namespace ExcelSheetManager.Views
                 Cursor = Cursors.Hand
             };
             _btnToggleHidden.FlatAppearance.BorderSize = 0;
-            _btnToggleHidden.Click += (s, e) => ToggleSheetVisibility();
+            _btnToggleHidden.Click += (s, e) => ToggleHiddenSheetsListFilter();
+
+            // 4px Physical Gap 2
+            Panel spacer2 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+
+            // Table of Contents Generator Button (Feature 2 - Purple #8B5CF6)
+            _btnToc = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 45,
+                Text = "TOC",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(139, 92, 246), // Purple
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnToc.FlatAppearance.BorderSize = 0;
+            _btnToc.Click += (s, e) => GenerateTableOfContents();
 
             _pnlVung2Top.Controls.Add(_lblVung2Title);
             _pnlVung2Top.Controls.Add(_btnCopySheetName);  // Far Right (Green)
-            _pnlVung2Top.Controls.Add(spacer);             // 4px Spacer Gap
-            _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Left of Spacer (Blue)
+            _pnlVung2Top.Controls.Add(spacer1);            // Gap
+            _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Middle (Blue)
+            _pnlVung2Top.Controls.Add(spacer2);            // Gap
+            _pnlVung2Top.Controls.Add(_btnToc);            // Left of Hide/Show (Purple)
 
             _txtFilterSheet = new TextBox
             {
@@ -377,20 +405,49 @@ namespace ExcelSheetManager.Views
             _lstSheets.SelectedIndexChanged += LstSheets_SelectedIndexChanged;
             _lstSheets.MouseDown += LstSheets_MouseDown;
 
-            // Sheet Context Menu Initialization
+            // Context Menu Initialization
             _cmsSheetMenu = new ContextMenuStrip();
+            
             _miProtectSheet = new ToolStripMenuItem("🔒 Protect Sheet...");
             _miProtectSheet.Click += (s, e) => ToggleProtectSelectedSheet();
 
             _miCopyName = new ToolStripMenuItem("📋 Copy Sheet Name");
             _miCopyName.Click += (s, e) => CopySelectedSheetName();
 
-            _miToggleHide = new ToolStripMenuItem("👁️ Hide / Unhide Sheet");
-            _miToggleHide.Click += (s, e) => ToggleSheetVisibility();
+            _miToggleHideExcel = new ToolStripMenuItem("👁️ Hide / Unhide Sheet in Excel");
+            _miToggleHideExcel.Click += (s, e) => ToggleSheetVisibilityInExcel();
+
+            _miChangeTabColor = new ToolStripMenuItem("🎨 Change Tab Color...");
+            _miChangeTabColor.Click += (s, e) => ChangeSheetTabColor();
+
+            _miClearTabColor = new ToolStripMenuItem("🧹 Reset Tab Color");
+            _miClearTabColor.Click += (s, e) => ResetSheetTabColor();
+
+            // Submenu: Sort Sheets
+            _miSortMenu = new ToolStripMenuItem("🔤 Sort Sheets in Excel");
+            _miSortAZ = new ToolStripMenuItem("Sort A to Z", null, (s, e) => SortSheetsInExcel("AZ"));
+            _miSortZA = new ToolStripMenuItem("Sort Z to A", null, (s, e) => SortSheetsInExcel("ZA"));
+            _miSortColor = new ToolStripMenuItem("Sort by Tab Color", null, (s, e) => SortSheetsInExcel("COLOR"));
+            _miSortMenu.DropDownItems.Add(_miSortAZ);
+            _miSortMenu.DropDownItems.Add(_miSortZA);
+            _miSortMenu.DropDownItems.Add(_miSortColor);
+
+            // Submenu: Export Sheet
+            _miExportMenu = new ToolStripMenuItem("📤 Export Sheet");
+            _miExportPdf = new ToolStripMenuItem("📄 Export to PDF...", null, (s, e) => ExportSheetToPdf());
+            _miExportExcel = new ToolStripMenuItem("📁 Export to New Excel File...", null, (s, e) => ExportSheetToNewWorkbook());
+            _miExportMenu.DropDownItems.Add(_miExportPdf);
+            _miExportMenu.DropDownItems.Add(_miExportExcel);
 
             _cmsSheetMenu.Items.Add(_miProtectSheet);
             _cmsSheetMenu.Items.Add(_miCopyName);
-            _cmsSheetMenu.Items.Add(_miToggleHide);
+            _cmsSheetMenu.Items.Add(_miToggleHideExcel);
+            _cmsSheetMenu.Items.Add(new ToolStripSeparator());
+            _cmsSheetMenu.Items.Add(_miChangeTabColor);
+            _cmsSheetMenu.Items.Add(_miClearTabColor);
+            _cmsSheetMenu.Items.Add(new ToolStripSeparator());
+            _cmsSheetMenu.Items.Add(_miSortMenu);
+            _cmsSheetMenu.Items.Add(_miExportMenu);
 
             _tblVung2.Controls.Add(_pnlVung2Header, 0, 0);
             _tblVung2.Controls.Add(_lstSheets, 0, 1);
@@ -415,6 +472,7 @@ namespace ExcelSheetManager.Views
                     if (_lstSheets.Items[index] is SheetItem item)
                     {
                         _miProtectSheet.Text = item.IsProtected ? "🔓 Unprotect Sheet..." : "🔒 Protect Sheet...";
+                        _miToggleHideExcel.Text = item.IsVisible ? "👁️ Hide Sheet in Excel" : "👁️ Unhide Sheet in Excel";
                         _cmsSheetMenu.Show(_lstSheets, e.Location);
                     }
                 }
@@ -447,12 +505,14 @@ namespace ExcelSheetManager.Views
             _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(30, 41, 59);
             _btnTheme.ForeColor = Color.White;
 
-            // Distinct eye-catching colors with 4px physical gap
             _btnToggleHidden.BackColor = Color.FromArgb(2, 132, 199);  // Sky Blue
             _btnToggleHidden.ForeColor = Color.White;
 
-            _btnCopySheetName.BackColor = Color.FromArgb(16, 185, 129); // Vibrant Emerald Green
+            _btnCopySheetName.BackColor = Color.FromArgb(16, 185, 129); // Emerald Green
             _btnCopySheetName.ForeColor = Color.White;
+
+            _btnToc.BackColor = Color.FromArgb(139, 92, 246); // Purple
+            _btnToc.ForeColor = Color.White;
 
             _lblStatus.BackColor = _cardColor;
             _lblStatus.ForeColor = _subTextColor;
@@ -716,10 +776,19 @@ namespace ExcelSheetManager.Views
                 _lstSheets.BeginUpdate();
                 _lstSheets.Items.Clear();
 
+                var matches = _allSheets.AsEnumerable();
+
+                // User Directive: Toggle filtering of hidden sheets in Vung 2 list without changing Excel worksheet state!
+                if (!_showHiddenSheetsInList)
+                {
+                    matches = matches.Where(s => s.IsVisible);
+                }
+
                 string filter = _txtFilterSheet.Text.Trim();
-                var matches = string.IsNullOrEmpty(filter)
-                    ? _allSheets
-                    : _allSheets.Where(s => s.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
+                if (!string.IsNullOrEmpty(filter))
+                {
+                    matches = matches.Where(s => s.Name.IndexOf(filter, StringComparison.OrdinalIgnoreCase) >= 0);
+                }
 
                 foreach (var item in matches)
                 {
@@ -737,21 +806,26 @@ namespace ExcelSheetManager.Views
             }
         }
 
-        // --- BUTTON ACTION HANDLERS ---
-        private void ToggleSheetVisibility()
+        // --- BUTTON & CONTEXT ACTION HANDLERS ---
+        private void ToggleHiddenSheetsListFilter()
+        {
+            _showHiddenSheetsInList = !_showHiddenSheetsInList;
+            FilterSheetsList();
+            _lblStatus.Text = _showHiddenSheetsInList ? "Showing all sheets (including hidden)" : "Filtering out hidden sheets from list";
+        }
+
+        private void ToggleSheetVisibilityInExcel()
         {
             try
             {
                 if (_selectedWorkbook?.WorkbookRef is not Excel.Workbook wb) return;
 
-                // Check if a specific sheet item is selected in Vùng 2 list
                 if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
                 {
                     if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
                     {
                         if (ws.Visible == Excel.XlSheetVisibility.xlSheetVisible)
                         {
-                            // Ensure at least 1 worksheet remains visible
                             int visibleCount = 0;
                             foreach (Excel.Worksheet sheet in wb.Worksheets)
                             {
@@ -765,40 +839,17 @@ namespace ExcelSheetManager.Views
                             }
 
                             ws.Visible = Excel.XlSheetVisibility.xlSheetHidden;
-                            _lblStatus.Text = $"Hid sheet: {ws.Name}";
+                            _lblStatus.Text = $"Hid sheet in Excel: {ws.Name}";
                         }
                         else
                         {
                             ws.Visible = Excel.XlSheetVisibility.xlSheetVisible;
-                            _lblStatus.Text = $"Unhid sheet: {ws.Name}";
+                            _lblStatus.Text = $"Unhid sheet in Excel: {ws.Name}";
                         }
 
                         RefreshData();
-                        return;
                     }
                 }
-
-                // Fallback: Toggle all hidden sheets in workbook
-                int unhiddenCount = 0;
-                foreach (Excel.Worksheet ws in wb.Worksheets)
-                {
-                    if (ws.Visible != Excel.XlSheetVisibility.xlSheetVisible)
-                    {
-                        ws.Visible = Excel.XlSheetVisibility.xlSheetVisible;
-                        unhiddenCount++;
-                    }
-                }
-
-                if (unhiddenCount > 0)
-                {
-                    _lblStatus.Text = $"Unhid {unhiddenCount} hidden sheet(s) in {wb.Name}";
-                }
-                else
-                {
-                    _lblStatus.Text = "All sheets in workbook are currently visible.";
-                }
-
-                RefreshData();
             }
             catch (Exception ex)
             {
@@ -905,6 +956,297 @@ namespace ExcelSheetManager.Views
             catch (Exception ex)
             {
                 _lblStatus.Text = $"Protection error: {ex.Message}";
+            }
+        }
+
+        // --- FEATURE 2: TABLE OF CONTENTS GENERATOR ---
+        private void GenerateTableOfContents()
+        {
+            try
+            {
+                if (_selectedWorkbook?.WorkbookRef is not Excel.Workbook wb)
+                {
+                    _lblStatus.Text = "No active workbook to create Table of Contents.";
+                    return;
+                }
+
+                const string tocSheetName = "MUC_LUC";
+                Excel.Worksheet? tocWs = null;
+
+                // Check if MUC_LUC sheet already exists
+                foreach (Excel.Worksheet sheet in wb.Worksheets)
+                {
+                    if (sheet.Name.Equals(tocSheetName, StringComparison.OrdinalIgnoreCase))
+                    {
+                        tocWs = sheet;
+                        break;
+                    }
+                }
+
+                if (tocWs == null)
+                {
+                    // Add new sheet at first position
+                    Excel.Worksheet firstWs = (Excel.Worksheet)wb.Worksheets[1];
+                    tocWs = (Excel.Worksheet)wb.Worksheets.Add(firstWs, Type.Missing, Type.Missing, Type.Missing);
+                    tocWs.Name = tocSheetName;
+                }
+
+                tocWs.Activate();
+
+                // Clear contents
+                tocWs.Cells.Clear();
+
+                // Title Banner
+                Excel.Range titleRange = tocWs.get_Range("A1", "E1");
+                titleRange.Merge();
+                titleRange.Value2 = "📑 BẢNG MỤC LỤC SỔ TÍNH (TABLE OF CONTENTS)";
+                titleRange.Font.Bold = true;
+                titleRange.Font.Size = 14;
+                titleRange.Font.Name = "Segoe UI";
+                titleRange.Interior.Color = ColorTranslator.ToOle(Color.FromArgb(30, 41, 59));
+                titleRange.Font.Color = ColorTranslator.ToOle(Color.FromArgb(248, 250, 252));
+                titleRange.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                titleRange.RowHeight = 32;
+
+                // Table Header Row
+                string[] headers = { "STT", "TÊN SHEET (CLICK NHẢY TRANG)", "MÀU TAB", "TRẠNG THÁI", "BẢO VỆ" };
+                for (int c = 0; c < headers.Length; c++)
+                {
+                    Excel.Range cell = (Excel.Range)tocWs.Cells[3, c + 1];
+                    cell.Value2 = headers[c];
+                    cell.Font.Bold = true;
+                    cell.Font.Size = 10;
+                    cell.Font.Name = "Segoe UI";
+                    cell.Interior.Color = ColorTranslator.ToOle(Color.FromArgb(51, 65, 85));
+                    cell.Font.Color = ColorTranslator.ToOle(Color.White);
+                    cell.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                }
+                ((Excel.Range)tocWs.get_Range("A3", "E3")).RowHeight = 24;
+
+                // Loop through sheets
+                int rowIndex = 4;
+                int stt = 1;
+                foreach (Excel.Worksheet sheet in wb.Worksheets)
+                {
+                    if (sheet.Name.Equals(tocSheetName, StringComparison.OrdinalIgnoreCase)) continue;
+
+                    // STT
+                    Excel.Range cellStt = (Excel.Range)tocWs.Cells[rowIndex, 1];
+                    cellStt.Value2 = stt++;
+                    cellStt.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+
+                    // Hyperlinked Sheet Name
+                    Excel.Range cellName = (Excel.Range)tocWs.Cells[rowIndex, 2];
+                    tocWs.Hyperlinks.Add(cellName, "", $"'{sheet.Name}'!A1", Type.Missing, sheet.Name);
+                    cellName.Font.Bold = true;
+                    cellName.Font.Size = 10;
+
+                    // Tab Color
+                    Excel.Range cellColor = (Excel.Range)tocWs.Cells[rowIndex, 3];
+                    var (colorHex, hasCustom) = ColorHelper.GetSheetTabColorHex(sheet);
+                    cellColor.Value2 = colorHex;
+                    cellColor.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+                    if (hasCustom)
+                    {
+                        try
+                        {
+                            Color c = ColorTranslator.FromHtml(colorHex);
+                            cellColor.Interior.Color = ColorTranslator.ToOle(c);
+                        }
+                        catch { }
+                    }
+
+                    // Visibility Status
+                    Excel.Range cellVis = (Excel.Range)tocWs.Cells[rowIndex, 4];
+                    cellVis.Value2 = sheet.Visible == Excel.XlSheetVisibility.xlSheetVisible ? "Hiện" : "Ẩn";
+                    cellVis.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+
+                    // Protection Status
+                    Excel.Range cellProt = (Excel.Range)tocWs.Cells[rowIndex, 5];
+                    cellProt.Value2 = sheet.ProtectContents ? "🔒 Khóa" : "Bình thường";
+                    cellProt.HorizontalAlignment = Excel.XlHAlign.xlHAlignCenter;
+
+                    ((Excel.Range)tocWs.get_Range($"A{rowIndex}", $"E{rowIndex}")).RowHeight = 20;
+                    rowIndex++;
+                }
+
+                // Format Table Columns AutoFit
+                Excel.Range fullTable = tocWs.get_Range("A3", $"E{rowIndex - 1}");
+                fullTable.Borders.LineStyle = Excel.XlLineStyle.xlContinuous;
+                fullTable.Columns.AutoFit();
+
+                RefreshData();
+                _lblStatus.Text = $"Created Table of Contents 'MUC_LUC' with {stt - 1} sheets";
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not create TOC: {ex.Message}";
+            }
+        }
+
+        // --- FEATURE 3: SHEET SORTING ---
+        private void SortSheetsInExcel(string sortMode)
+        {
+            try
+            {
+                if (_selectedWorkbook?.WorkbookRef is not Excel.Workbook wb) return;
+
+                List<Excel.Worksheet> sheetsList = new();
+                foreach (object s in wb.Worksheets)
+                {
+                    if (s is Excel.Worksheet ws) sheetsList.Add(ws);
+                }
+
+                if (sheetsList.Count <= 1) return;
+
+                if (sortMode == "AZ")
+                {
+                    sheetsList = sheetsList.OrderBy(s => s.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                }
+                else if (sortMode == "ZA")
+                {
+                    sheetsList = sheetsList.OrderByDescending(s => s.Name, StringComparer.OrdinalIgnoreCase).ToList();
+                }
+                else if (sortMode == "COLOR")
+                {
+                    sheetsList = sheetsList.OrderBy(s => ColorHelper.GetSheetTabColorHex(s).Hex).ToList();
+                }
+
+                // Move sheets in Excel order
+                for (int i = 0; i < sheetsList.Count; i++)
+                {
+                    if (i == 0)
+                    {
+                        sheetsList[i].Move(wb.Worksheets[1], Type.Missing);
+                    }
+                    else
+                    {
+                        sheetsList[i].Move(Type.Missing, sheetsList[i - 1]);
+                    }
+                }
+
+                RefreshData();
+                _lblStatus.Text = $"Sorted sheets in {wb.Name} ({sortMode})";
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Sort error: {ex.Message}";
+            }
+        }
+
+        // --- FEATURE 4: TAB COLOR PICKER ---
+        private void ChangeSheetTabColor()
+        {
+            try
+            {
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
+                    {
+                        using (ColorDialog cd = new ColorDialog())
+                        {
+                            cd.AllowFullOpen = true;
+                            cd.FullOpen = true;
+                            try
+                            {
+                                cd.Color = ColorTranslator.FromHtml(targetSheet.TabColorHex);
+                            }
+                            catch { }
+
+                            if (cd.ShowDialog() == DialogResult.OK)
+                            {
+                                ws.Tab.Color = ColorTranslator.ToOle(cd.Color);
+                                RefreshData();
+                                _lblStatus.Text = $"Changed tab color for sheet: {ws.Name}";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Color change error: {ex.Message}";
+            }
+        }
+
+        private void ResetSheetTabColor()
+        {
+            try
+            {
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
+                    {
+                        ws.Tab.ColorIndex = Excel.XlColorIndex.xlColorIndexNone;
+                        RefreshData();
+                        _lblStatus.Text = $"Reset tab color for sheet: {ws.Name}";
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Color reset error: {ex.Message}";
+            }
+        }
+
+        // --- FEATURE 6: EXPORT TO PDF & NEW WORKBOOK ---
+        private void ExportSheetToPdf()
+        {
+            try
+            {
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
+                    {
+                        using (SaveFileDialog sfd = new SaveFileDialog())
+                        {
+                            sfd.Filter = "PDF File (*.pdf)|*.pdf";
+                            sfd.FileName = $"{ws.Name}.pdf";
+                            if (sfd.ShowDialog() == DialogResult.OK)
+                            {
+                                ws.ExportAsFixedFormat(Excel.XlFixedFormatType.xlTypePDF, sfd.FileName);
+                                _lblStatus.Text = $"Exported '{ws.Name}' to PDF: {Path.GetFileName(sfd.FileName)}";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"PDF export error: {ex.Message}";
+            }
+        }
+
+        private void ExportSheetToNewWorkbook()
+        {
+            try
+            {
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
+                    {
+                        using (SaveFileDialog sfd = new SaveFileDialog())
+                        {
+                            sfd.Filter = "Excel Workbook (*.xlsx)|*.xlsx";
+                            sfd.FileName = $"{ws.Name}.xlsx";
+                            if (sfd.ShowDialog() == DialogResult.OK)
+                            {
+                                ws.Copy();
+                                var excelApp = (Excel.Application)ExcelDnaUtil.Application;
+                                if (excelApp.ActiveWorkbook != null)
+                                {
+                                    excelApp.ActiveWorkbook.SaveAs(sfd.FileName);
+                                }
+                                RefreshData();
+                                _lblStatus.Text = $"Exported '{ws.Name}' to new file: {Path.GetFileName(sfd.FileName)}";
+                            }
+                        }
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Excel export error: {ex.Message}";
             }
         }
 
