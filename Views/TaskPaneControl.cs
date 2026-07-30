@@ -59,7 +59,10 @@ namespace ExcelSheetManager.Views
         private ListBox _lstWorkbooks = null!;
 
         private Panel _pnlVung2Header = null!;
+        private Panel _pnlVung2Top = null!;
         private Label _lblVung2Title = null!;
+        private Button _btnToggleHidden = null!;
+        private Button _btnCopySheetName = null!;
         private TextBox _txtFilterSheet = null!;
         private ListBox _lstSheets = null!;
 
@@ -285,14 +288,52 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(6, 4, 6, 4)
             };
 
+            _pnlVung2Top = new Panel
+            {
+                Dock = DockStyle.Top,
+                Height = 24,
+                Margin = new Padding(0)
+            };
+
             _lblVung2Title = new Label
             {
                 Text = "SHEETS",
                 Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
                 ForeColor = Color.FromArgb(129, 140, 248),
-                Dock = DockStyle.Top,
-                Height = 22
+                Dock = DockStyle.Left,
+                AutoSize = true,
+                TextAlign = ContentAlignment.MiddleLeft
             };
+
+            // Copy Sheet Name Button (Far Right in Vùng 2 Header)
+            _btnCopySheetName = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 55,
+                Text = "Copy",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnCopySheetName.FlatAppearance.BorderSize = 0;
+            _btnCopySheetName.Click += (s, e) => CopySelectedSheetName();
+
+            // Hide/Show Hidden Sheets Button (Next to Copy in Vùng 2 Header)
+            _btnToggleHidden = new Button
+            {
+                Dock = DockStyle.Right,
+                Width = 72,
+                Text = "Hide/Show",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnToggleHidden.FlatAppearance.BorderSize = 0;
+            _btnToggleHidden.Click += (s, e) => ToggleSheetVisibility();
+
+            _pnlVung2Top.Controls.Add(_lblVung2Title);
+            _pnlVung2Top.Controls.Add(_btnToggleHidden);
+            _pnlVung2Top.Controls.Add(_btnCopySheetName);
 
             _txtFilterSheet = new TextBox
             {
@@ -303,7 +344,7 @@ namespace ExcelSheetManager.Views
             };
             _txtFilterSheet.TextChanged += (s, e) => FilterSheetsList();
 
-            _pnlVung2Header.Controls.Add(_lblVung2Title);
+            _pnlVung2Header.Controls.Add(_pnlVung2Top);
             _pnlVung2Header.Controls.Add(_txtFilterSheet);
 
             _lstSheets = new ListBox
@@ -354,6 +395,12 @@ namespace ExcelSheetManager.Views
             _btnTheme.Text = _isDarkTheme ? "Light" : "Dark";
             _btnTheme.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(30, 41, 59);
             _btnTheme.ForeColor = Color.White;
+
+            _btnToggleHidden.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
+            _btnToggleHidden.ForeColor = _isDarkTheme ? Color.White : Color.FromArgb(15, 23, 42);
+
+            _btnCopySheetName.BackColor = _isDarkTheme ? Color.FromArgb(51, 65, 85) : Color.FromArgb(226, 232, 240);
+            _btnCopySheetName.ForeColor = _isDarkTheme ? Color.White : Color.FromArgb(15, 23, 42);
 
             _lblStatus.BackColor = _cardColor;
             _lblStatus.ForeColor = _subTextColor;
@@ -633,6 +680,112 @@ namespace ExcelSheetManager.Views
                     SendMessage(_lstSheets.Handle, WM_SETREDRAW, true, 0);
                     _lstSheets.Invalidate();
                 }
+            }
+        }
+
+        // --- BUTTON ACTION HANDLERS ---
+        private void ToggleSheetVisibility()
+        {
+            try
+            {
+                if (_selectedWorkbook?.WorkbookRef is not Excel.Workbook wb) return;
+
+                // Check if a specific sheet item is selected in Vùng 2 list
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem targetSheet && targetSheet.SheetRef is Excel.Worksheet ws)
+                    {
+                        if (ws.Visible == Excel.XlSheetVisibility.xlSheetVisible)
+                        {
+                            // Ensure at least 1 worksheet remains visible
+                            int visibleCount = 0;
+                            foreach (Excel.Worksheet sheet in wb.Worksheets)
+                            {
+                                if (sheet.Visible == Excel.XlSheetVisibility.xlSheetVisible) visibleCount++;
+                            }
+
+                            if (visibleCount <= 1)
+                            {
+                                _lblStatus.Text = "Cannot hide the only visible sheet in workbook.";
+                                return;
+                            }
+
+                            ws.Visible = Excel.XlSheetVisibility.xlSheetHidden;
+                            _lblStatus.Text = $"Hid sheet: {ws.Name}";
+                        }
+                        else
+                        {
+                            ws.Visible = Excel.XlSheetVisibility.xlSheetVisible;
+                            _lblStatus.Text = $"Unhid sheet: {ws.Name}";
+                        }
+
+                        RefreshData();
+                        return;
+                    }
+                }
+
+                // Fallback: Toggle all hidden sheets in workbook
+                int unhiddenCount = 0;
+                foreach (Excel.Worksheet ws in wb.Worksheets)
+                {
+                    if (ws.Visible != Excel.XlSheetVisibility.xlSheetVisible)
+                    {
+                        ws.Visible = Excel.XlSheetVisibility.xlSheetVisible;
+                        unhiddenCount++;
+                    }
+                }
+
+                if (unhiddenCount > 0)
+                {
+                    _lblStatus.Text = $"Unhid {unhiddenCount} hidden sheet(s) in {wb.Name}";
+                }
+                else
+                {
+                    _lblStatus.Text = "All sheets in workbook are currently visible.";
+                }
+
+                RefreshData();
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not toggle sheet visibility: {ex.Message}";
+            }
+        }
+
+        private void CopySelectedSheetName()
+        {
+            try
+            {
+                string? nameToCopy = null;
+
+                if (_lstSheets.SelectedIndex >= 0 && _lstSheets.SelectedIndex < _lstSheets.Items.Count)
+                {
+                    if (_lstSheets.Items[_lstSheets.SelectedIndex] is SheetItem item)
+                    {
+                        nameToCopy = item.Name;
+                    }
+                }
+
+                if (string.IsNullOrEmpty(nameToCopy) && _selectedWorkbook?.WorkbookRef is Excel.Workbook refWb)
+                {
+                    object activeSheet = refWb.ActiveSheet;
+                    if (activeSheet is Excel.Worksheet ws) nameToCopy = ws.Name;
+                    else if (activeSheet is Excel.Chart chart) nameToCopy = chart.Name;
+                }
+
+                if (!string.IsNullOrEmpty(nameToCopy))
+                {
+                    Clipboard.SetText(nameToCopy);
+                    _lblStatus.Text = $"Copied sheet name: \"{nameToCopy}\" to clipboard";
+                }
+                else
+                {
+                    _lblStatus.Text = "No sheet selected to copy.";
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not copy sheet name: {ex.Message}";
             }
         }
 
