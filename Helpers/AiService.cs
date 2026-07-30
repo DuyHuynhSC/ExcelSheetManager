@@ -8,6 +8,17 @@ namespace ExcelSheetManager.Helpers
 {
     internal static class AiService
     {
+        static AiService()
+        {
+            try
+            {
+                // Enable TLS 1.2 & 1.3 and bypass self-signed SSL certificate errors for local/internal AI servers
+                ServicePointManager.SecurityProtocol = SecurityProtocolType.Tls12 | (SecurityProtocolType)3072;
+                ServicePointManager.ServerCertificateValidationCallback = (sender, cert, chain, sslPolicyErrors) => true;
+            }
+            catch { }
+        }
+
         public static string GetEndpointUrl()
         {
             string baseUrl = SettingsHelper.GetAiBaseUrl().Trim();
@@ -15,10 +26,15 @@ namespace ExcelSheetManager.Helpers
 
             baseUrl = baseUrl.TrimEnd('/');
 
-            if (baseUrl.EndsWith("/chat/completions", StringComparison.OrdinalIgnoreCase))
+            // If user enters a full path containing /chat/completions, /completions, /api/chat, use exact URL as provided!
+            if (baseUrl.IndexOf("/chat/completions", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                baseUrl.IndexOf("/completions", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                baseUrl.IndexOf("/api/chat", StringComparison.OrdinalIgnoreCase) >= 0 ||
+                baseUrl.IndexOf("/api/generate", StringComparison.OrdinalIgnoreCase) >= 0)
             {
                 return baseUrl;
             }
+
             if (baseUrl.EndsWith("/v1", StringComparison.OrdinalIgnoreCase))
             {
                 return baseUrl + "/chat/completions";
@@ -27,16 +43,60 @@ namespace ExcelSheetManager.Helpers
             return baseUrl + "/v1/chat/completions";
         }
 
-        public static async Task<bool> TestConnectionAsync()
+        public static async Task<(bool Success, string Message)> TestConnectionDiagnosticsAsync()
         {
             try
             {
-                string result = await GetCompletionAsync("ping", "Respond with pong only.");
-                return !string.IsNullOrEmpty(result) && !result.StartsWith("Error", StringComparison.OrdinalIgnoreCase) && !result.StartsWith("AI Server Error", StringComparison.OrdinalIgnoreCase);
+                string endpoint = GetEndpointUrl();
+                string modelName = SettingsHelper.GetAiModelName();
+                string apiKey = SettingsHelper.GetAiApiKey();
+
+                string jsonPayload = $"{{\"model\":\"{modelName}\",\"messages\":[{{\"role\":\"user\",\"content\":\"Hi\"}}],\"max_tokens\":5}}";
+
+                var request = (HttpWebRequest)WebRequest.Create(endpoint);
+                request.Method = "POST";
+                request.ContentType = "application/json; charset=utf-8";
+                request.Timeout = 15000;
+
+                if (!string.IsNullOrEmpty(apiKey) && !apiKey.Equals("local", StringComparison.OrdinalIgnoreCase))
+                {
+                    request.Headers["Authorization"] = "Bearer " + apiKey;
+                }
+
+                byte[] bodyBytes = Encoding.UTF8.GetBytes(jsonPayload);
+                request.ContentLength = bodyBytes.Length;
+
+                using (var reqStream = await request.GetRequestStreamAsync())
+                {
+                    await reqStream.WriteAsync(bodyBytes, 0, bodyBytes.Length);
+                }
+
+                using (var response = (HttpWebResponse)await request.GetResponseAsync())
+                using (var resStream = response.GetResponseStream())
+                using (var reader = new StreamReader(resStream, Encoding.UTF8))
+                {
+                    string responseBody = await reader.ReadToEndAsync();
+                    return (true, $"✓ Connected successfully!\nEndpoint: {endpoint}\nModel: {modelName}");
+                }
             }
-            catch
+            catch (WebException webEx)
             {
-                return false;
+                string detail = webEx.Message;
+                if (webEx.Response is HttpWebResponse httpRes)
+                {
+                    try
+                    {
+                        using var resStream = httpRes.GetResponseStream();
+                        using var reader = new StreamReader(resStream, Encoding.UTF8);
+                        detail = $"HTTP {(int)httpRes.StatusCode} ({httpRes.StatusDescription}): {reader.ReadToEnd()}";
+                    }
+                    catch { }
+                }
+                return (false, $"✗ Connection Error:\nEndpoint: {GetEndpointUrl()}\nDetail: {detail}");
+            }
+            catch (Exception ex)
+            {
+                return (false, $"✗ Error: {ex.Message}\nEndpoint: {GetEndpointUrl()}");
             }
         }
 
@@ -85,13 +145,11 @@ namespace ExcelSheetManager.Helpers
                 }
                 catch (WebException webEx)
                 {
-                    if (webEx.Response != null)
+                    if (webEx.Response is HttpWebResponse httpRes)
                     {
-                        using (var resStream = webEx.Response.GetResponseStream())
-                        using (var reader = new StreamReader(resStream, Encoding.UTF8))
-                        {
-                            return $"AI Server Error: {reader.ReadToEnd()}";
-                        }
+                        using var resStream = httpRes.GetResponseStream();
+                        using var reader = new StreamReader(resStream, Encoding.UTF8);
+                        return $"AI Server Error [{(int)httpRes.StatusCode}]: {reader.ReadToEnd()}";
                     }
                     return $"Error connecting to Local AI: {webEx.Message}";
                 }
