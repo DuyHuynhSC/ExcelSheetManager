@@ -37,7 +37,7 @@ namespace ExcelSheetManager.Views
         }
 
         private TextBox _txtPrompt = null!;
-        private TextBox _txtResponse = null!;
+        private RichTextBox _rtbResponse = null!;
         private ComboBox _cmbMode = null!;
         private Button _btnSend = null!;
         private Button _btnCopy = null!;
@@ -67,11 +67,11 @@ namespace ExcelSheetManager.Views
         {
             this.SuspendLayout();
 
-            // Top Panel
+            // Top Control Panel
             Panel pnlTop = new Panel
             {
                 Dock = DockStyle.Top,
-                Height = 135,
+                Height = 130,
                 Padding = new Padding(12, 10, 12, 6)
             };
 
@@ -126,9 +126,9 @@ namespace ExcelSheetManager.Views
                 Location = new Point(440, 40),
                 Width = 110,
                 Height = 80,
-                BackColor = Color.FromArgb(59, 130, 246),
+                Font = new Font("Segoe UI", 10.5f, FontStyle.Bold),
                 ForeColor = Color.White,
-                Font = new Font("Segoe UI", 10f, FontStyle.Bold),
+                BackColor = Color.FromArgb(59, 130, 246),
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -142,49 +142,48 @@ namespace ExcelSheetManager.Views
             pnlTop.Controls.Add(_txtPrompt);
             pnlTop.Controls.Add(_btnSend);
 
-            // Bottom Panel (TableLayoutPanel prevents _lblStatus from overlapping buttons)
+            // Bottom Action Bar
             TableLayoutPanel pnlBottom = new TableLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 46,
+                Height = 44,
+                Padding = new Padding(12, 6, 12, 8),
                 ColumnCount = 3,
-                RowCount = 1,
-                Padding = new Padding(8, 4, 8, 4),
-                Margin = new Padding(0)
+                RowCount = 1
             };
-            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // Status label gets remaining space
-            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f)); // Insert into Cell button
-            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 115f)); // Copy Text button
-            pnlBottom.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f));
+            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 115f));
 
             _lblStatus = new Label
             {
                 Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
-                AutoEllipsis = true,
-                Text = "Specify cell (e.g. B1) in prompt for auto-reading Excel data.",
-                ForeColor = Color.FromArgb(148, 163, 184)
+                Font = new Font("Segoe UI", 8.5f),
+                Text = "Ready",
+                AutoEllipsis = true
             };
 
             _btnInsertCell = new Button
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(2),
+                Height = 30,
                 Text = "Insert into Cell",
-                BackColor = Color.FromArgb(16, 185, 129),
-                ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(16, 185, 129),
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
             _btnInsertCell.FlatAppearance.BorderSize = 0;
-            _btnInsertCell.Click += (s, e) => InsertIntoActiveCell();
+            _btnInsertCell.Click += (s, e) => InsertResponseToCell();
 
             _btnCopy = new Button
             {
                 Dock = DockStyle.Fill,
-                Margin = new Padding(2),
+                Height = 30,
                 Text = "Copy Text",
+                Font = new Font("Segoe UI", 9f, FontStyle.Bold),
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
@@ -194,19 +193,19 @@ namespace ExcelSheetManager.Views
             pnlBottom.Controls.Add(_btnInsertCell, 1, 0);
             pnlBottom.Controls.Add(_btnCopy, 2, 0);
 
-            // Middle Response Panel
-            _txtResponse = new TextBox
+            // Middle Response Panel (RichTextBox for Perfect Paragraph & Line Break Rendering!)
+            _rtbResponse = new RichTextBox
             {
                 Dock = DockStyle.Fill,
-                Multiline = true,
                 ReadOnly = true,
-                ScrollBars = ScrollBars.Vertical,
+                BorderStyle = BorderStyle.None,
+                ScrollBars = RichTextBoxScrollBars.Vertical,
                 Font = new Font("Segoe UI", 9.5f),
                 BackColor = _isDarkTheme ? Color.FromArgb(30, 41, 59) : Color.White,
                 ForeColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42)
             };
 
-            this.Controls.Add(_txtResponse);
+            this.Controls.Add(_rtbResponse);
             this.Controls.Add(pnlTop);
             this.Controls.Add(pnlBottom);
 
@@ -251,7 +250,7 @@ namespace ExcelSheetManager.Views
             _btnSend.Enabled = false;
             _lblStatus.Text = "Reading Excel cells & sending to Local AI...";
             _lblStatus.ForeColor = Color.FromArgb(59, 130, 246);
-            _txtResponse.Text = "Reading Excel cells and generating AI response...";
+            _rtbResponse.Text = "Reading Excel cells and generating AI response...";
 
             // Auto-extract cell content referenced in user prompt
             var (enrichedPrompt, logMessage) = EnrichPromptWithExcelCellData(prompt);
@@ -291,7 +290,7 @@ namespace ExcelSheetManager.Views
                 systemPrompt = _cmbMode.SelectedIndex switch
                 {
                     0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
-                    2 => "You are an expert Excel data analyst. Explain the user's Excel formula concisely, clearly, and professionally in Vietnamese.\n\nSTRICT FORMATTING REQUIREMENTS:\n- Keep explanations brief, structured, and easy to read at a glance.\n- Avoid long paragraphs of text.\n\nUSE THIS STRUCTURE EXACTLY:\n📌 Ý NGHĨA CÔNG THỨC:\n[1-2 dòng giải thích ngắn gọn mục đích tính toán]\n\n🧩 CHI TIẾT CÁC HÀM SỬ DỤNG:\n  • [Hàm 1]: [Giải thích ngắn gọn 1 dòng]\n  • [Hàm 2]: [Giải thích ngắn gọn 1 dòng]\n\n💡 TÓM TẮT KẾT QUẢ:\n  • [Kết quả và lưu ý ngắn gọn]",
+                    2 => "You are an expert Excel data analyst. Explain the selected Excel formula in clear, concise Vietnamese.\n\nCRITICAL OUTPUT FORMAT REQUIREMENTS:\n- DO NOT output giant walls of text.\n- Use short paragraphs and bullet points.\n- Format headers with 📌.\n\nUse this structure:\n📌 Ý NGHĨA CÔNG THỨC:\n[1-2 câu giải thích ngắn gọn]\n\n📌 CHI TIẾT CÁC HÀM:\n- [Hàm 1]: [Giải thích ngắn gọn 1 dòng]\n- [Hàm 2]: [Giải thích ngắn gọn 1 dòng]\n\n📌 TÓM TẮT KẾT QUẢ:\n- [Kết quả và ghi chú]",
                     _ => "You are an intelligent, helpful AI assistant integrated inside Microsoft Excel. Provide concise, structured answers in Vietnamese with bullet points."
                 };
             }
@@ -299,13 +298,13 @@ namespace ExcelSheetManager.Views
             try
             {
                 string result = await AiService.GetCompletionAsync(enrichedPrompt, systemPrompt);
-                _txtResponse.Text = CleanMarkdownForWinForms(result);
+                RenderFormattedResponse(result);
                 _lblStatus.Text = string.IsNullOrEmpty(logMessage) ? "AI Response received successfully." : logMessage;
                 _lblStatus.ForeColor = Color.FromArgb(16, 185, 129);
             }
             catch (Exception ex)
             {
-                _txtResponse.Text = $"Error: {ex.Message}";
+                _rtbResponse.Text = $"Error: {ex.Message}";
                 _lblStatus.Text = "Error communicating with AI.";
                 _lblStatus.ForeColor = Color.FromArgb(239, 68, 68);
             }
@@ -315,30 +314,69 @@ namespace ExcelSheetManager.Views
             }
         }
 
-        private static string CleanMarkdownForWinForms(string text)
+        private void RenderFormattedResponse(string rawText)
         {
-            if (string.IsNullOrEmpty(text)) return string.Empty;
+            _rtbResponse.Clear();
+            if (string.IsNullOrEmpty(rawText)) return;
 
-            // Normalize newlines
-            text = text.Replace("\r\n", "\n").Replace("\r", "\n");
+            _rtbResponse.SuspendLayout();
+            try
+            {
+                // Normalize line endings
+                string normalized = rawText.Replace("\r\n", "\n").Replace("\r", "\n");
 
-            // Remove markdown bold and backticks
-            text = text.Replace("**", "");
-            text = text.Replace("`", "");
+                // Remove markdown bold and backticks
+                normalized = normalized.Replace("**", "").Replace("`", "");
 
-            // Format markdown headers ### Title -> 📌 Title
-            text = Regex.Replace(text, @"^#{1,6}\s*(.*)$", "📌 $1", RegexOptions.Multiline);
+                string[] lines = normalized.Split('\n');
+                bool isFirstLine = true;
 
-            // Format horizontal lines --- -> separator line
-            text = Regex.Replace(text, @"^\s*---+\s*$", "──────────────────────────────────────", RegexOptions.Multiline);
+                foreach (string rawLine in lines)
+                {
+                    string line = rawLine.TrimEnd();
+                    if (string.IsNullOrWhiteSpace(line))
+                    {
+                        _rtbResponse.AppendText("\r\n\r\n");
+                        continue;
+                    }
 
-            // Format bullet points * or - -> •
-            text = Regex.Replace(text, @"^\s*[\*\-]\s+", "  • ", RegexOptions.Multiline);
+                    if (!isFirstLine)
+                    {
+                        _rtbResponse.AppendText("\r\n");
+                    }
+                    isFirstLine = false;
 
-            // Restore Windows CRLF
-            text = text.Replace("\n", "\r\n");
+                    bool isHeader = Regex.IsMatch(line, @"^#{1,6}\s") || line.StartsWith("📌") || line.StartsWith("🔹") || Regex.IsMatch(line, @"^\d+\.\s");
+                    string cleanLine = Regex.Replace(line, @"^#{1,6}\s*", "📌 ");
+                    cleanLine = Regex.Replace(cleanLine, @"^\s*---+\s*$", "──────────────────────────────────────");
+                    cleanLine = Regex.Replace(cleanLine, @"^\s*[\*\-]\s+", "  • ");
 
-            return text.Trim();
+                    int start = _rtbResponse.TextLength;
+                    _rtbResponse.AppendText(cleanLine);
+                    int len = cleanLine.Length;
+
+                    if (isHeader)
+                    {
+                        _rtbResponse.Select(start, len);
+                        _rtbResponse.SelectionFont = new Font("Segoe UI", 10f, FontStyle.Bold);
+                        _rtbResponse.SelectionColor = _isDarkTheme ? Color.FromArgb(56, 189, 248) : Color.FromArgb(2, 132, 199);
+                    }
+                    else
+                    {
+                        _rtbResponse.Select(start, len);
+                        _rtbResponse.SelectionFont = new Font("Segoe UI", 9.5f, FontStyle.Regular);
+                        _rtbResponse.SelectionColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42);
+                    }
+                }
+
+                _rtbResponse.SelectionStart = 0;
+                _rtbResponse.SelectionLength = 0;
+                _rtbResponse.ScrollToCaret();
+            }
+            finally
+            {
+                _rtbResponse.ResumeLayout();
+            }
         }
 
         private static (string Formula, string Value) ExtractFormulaAndValueFromRange(Excel.Range? range)
@@ -600,9 +638,9 @@ namespace ExcelSheetManager.Views
 
         private void CopyResponse()
         {
-            if (!string.IsNullOrEmpty(_txtResponse.Text))
+            if (!string.IsNullOrEmpty(_rtbResponse.Text))
             {
-                Clipboard.SetText(_txtResponse.Text);
+                Clipboard.SetText(_rtbResponse.Text);
                 _lblStatus.Text = "Copied AI response to clipboard.";
             }
         }
@@ -611,19 +649,8 @@ namespace ExcelSheetManager.Views
         {
             try
             {
-                string text = _txtResponse.Text.Trim();
+                string text = _rtbResponse.Text.Trim();
                 if (string.IsNullOrEmpty(text)) return;
-
-                // Strip markdown backticks if present
-                if (text.StartsWith("```"))
-                {
-                    int firstLine = text.IndexOf('\n');
-                    int lastLine = text.LastIndexOf("```");
-                    if (firstLine >= 0 && lastLine > firstLine)
-                    {
-                        text = text.Substring(firstLine + 1, lastLine - firstLine - 1).Trim();
-                    }
-                }
 
                 var excelApp = (Excel.Application)ExcelDnaUtil.Application;
                 if (excelApp?.ActiveCell != null)
@@ -637,5 +664,7 @@ namespace ExcelSheetManager.Views
                 _lblStatus.Text = $"Insert error: {ex.Message}";
             }
         }
+
+        private void InsertResponseToCell() => InsertIntoActiveCell();
     }
 }
