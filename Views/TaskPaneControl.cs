@@ -490,14 +490,63 @@ namespace ExcelSheetManager.Views
             }
         }
 
+        private (string FullPath, string WbName, string DirectoryPath, bool IsSaved) GetWorkbookPathDetails(WorkbookItem? item)
+        {
+            if (item == null) return (string.Empty, string.Empty, string.Empty, false);
+
+            string fullPath = string.Empty;
+            string wbName = item.Name;
+            string dirPath = string.Empty;
+            bool isSaved = false;
+
+            if (item.WorkbookRef is Excel.Workbook wb)
+            {
+                try { fullPath = wb.FullName; } catch { }
+                try { wbName = wb.Name; } catch { }
+                try { isSaved = !string.IsNullOrEmpty(wb.Path); } catch { }
+            }
+
+            if (string.IsNullOrEmpty(fullPath))
+            {
+                fullPath = item.FullPath;
+            }
+
+            if (!string.IsNullOrEmpty(fullPath))
+            {
+                try
+                {
+                    if (fullPath.StartsWith("http:", StringComparison.OrdinalIgnoreCase) || fullPath.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
+                    {
+                        isSaved = true;
+                    }
+                    else
+                    {
+                        dirPath = Path.GetDirectoryName(fullPath) ?? string.Empty;
+                        if (!string.IsNullOrEmpty(dirPath) || fullPath.Contains(":") || fullPath.StartsWith("\\\\"))
+                        {
+                            isSaved = true;
+                        }
+                    }
+                }
+                catch { }
+            }
+
+            return (fullPath, wbName, dirPath, isSaved);
+        }
+
         private void CopySelectedWorkbookPath()
         {
             try
             {
-                if (_selectedWorkbook != null && !string.IsNullOrEmpty(_selectedWorkbook.FullPath))
+                var details = GetWorkbookPathDetails(_selectedWorkbook);
+                if (details.IsSaved && !string.IsNullOrEmpty(details.FullPath))
                 {
-                    Clipboard.SetText(_selectedWorkbook.FullPath);
-                    _lblStatus.Text = $"Copied file path: \"{_selectedWorkbook.FullPath}\"";
+                    Clipboard.SetText(details.FullPath);
+                    _lblStatus.Text = $"Copied file path: \"{details.FullPath}\"";
+                }
+                else
+                {
+                    _lblStatus.Text = $"File \"{details.WbName}\" has not been saved to disk yet.";
                 }
             }
             catch (Exception ex)
@@ -510,14 +559,36 @@ namespace ExcelSheetManager.Views
         {
             try
             {
-                if (_selectedWorkbook != null && !string.IsNullOrEmpty(_selectedWorkbook.FullPath) && File.Exists(_selectedWorkbook.FullPath))
+                var details = GetWorkbookPathDetails(_selectedWorkbook);
+                if (!details.IsSaved || string.IsNullOrEmpty(details.FullPath))
                 {
-                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{_selectedWorkbook.FullPath}\"");
+                    _lblStatus.Text = $"File \"{details.WbName}\" has not been saved to disk yet.";
+                    return;
+                }
+
+                string path = details.FullPath;
+
+                // Handle SharePoint / OneDrive HTTP URLs
+                if (path.StartsWith("http:", StringComparison.OrdinalIgnoreCase) || path.StartsWith("https:", StringComparison.OrdinalIgnoreCase))
+                {
+                    System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo(path) { UseShellExecute = true });
+                    _lblStatus.Text = $"Opened SharePoint/OneDrive location in browser";
+                    return;
+                }
+
+                // Handle Local Drives (C:\), Mapped Network Drives (Z:\), or UNC Network Paths (\\server\share\)
+                try
+                {
+                    System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{path}\"");
                     _lblStatus.Text = $"Opened file location in Windows Explorer";
                 }
-                else
+                catch
                 {
-                    _lblStatus.Text = "File has not been saved to disk yet.";
+                    if (!string.IsNullOrEmpty(details.DirectoryPath))
+                    {
+                        System.Diagnostics.Process.Start("explorer.exe", $"\"{details.DirectoryPath}\"");
+                        _lblStatus.Text = $"Opened folder: {details.DirectoryPath}";
+                    }
                 }
             }
             catch (Exception ex)
