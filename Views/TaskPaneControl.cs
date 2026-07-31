@@ -50,7 +50,7 @@ namespace ExcelSheetManager.Views
         // Controls
         private SplitContainer _splitContainer = null!;
 
-        private Panel _pnlVung1Header = null!;
+        private TableLayoutPanel _pnlVung1Header = null!;
         private Panel _pnlVung1Top = null!;
         private Panel _pnlVung1Footer = null!;
         private Label _lblVung1Title = null!;
@@ -60,7 +60,7 @@ namespace ExcelSheetManager.Views
         private TextBox _txtFilterFile = null!;
         private ListBox _lstWorkbooks = null!;
 
-        private Panel _pnlVung2Header = null!;
+        private TableLayoutPanel _pnlVung2Header = null!;
         private Panel _pnlVung2Top = null!;
         private Panel _pnlVung2Footer = null!;
         private Label _lblVung2Title = null!;
@@ -152,7 +152,7 @@ namespace ExcelSheetManager.Views
                 Margin = new Padding(0)
             };
 
-            // --- VÙNG 1: TABLE LAYOUT (ROW 0: HEADER 52px, ROW 1: LISTBOX 100%, ROW 2: FOOTER STATUS 22px) ---
+            // --- VÙNG 1: TABLE LAYOUT (ROW 0: HEADER 58px, ROW 1: LISTBOX 100%, ROW 2: FOOTER STATUS 22px) ---
             _tblVung1 = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -162,21 +162,25 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(0)
             };
             _tblVung1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 52f));
+            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 58f));
             _tblVung1.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));
 
-            _pnlVung1Header = new Panel
+            _pnlVung1Header = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
                 Margin = new Padding(0),
                 Padding = new Padding(6, 4, 6, 2)
             };
+            _pnlVung1Header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            _pnlVung1Header.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f)); // Row 0: Buttons
+            _pnlVung1Header.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f)); // Row 1: Filter TextBox
 
             _pnlVung1Top = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 24,
+                Dock = DockStyle.Fill,
                 Margin = new Padding(0)
             };
 
@@ -237,15 +241,15 @@ namespace ExcelSheetManager.Views
 
             _txtFilterFile = new TextBox
             {
-                Dock = DockStyle.Bottom,
+                Dock = DockStyle.Fill,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9f),
                 Text = ""
             };
             _txtFilterFile.TextChanged += (s, e) => FilterWorkbooksList();
 
-            _pnlVung1Header.Controls.Add(_pnlVung1Top);
-            _pnlVung1Header.Controls.Add(_txtFilterFile);
+            _pnlVung1Header.Controls.Add(_pnlVung1Top, 0, 0);
+            _pnlVung1Header.Controls.Add(_txtFilterFile, 0, 1);
 
             // VUNG 1 FOOTER STATUS BAR (Prevents overlap when TaskPane is narrowed!)
             _pnlVung1Footer = new Panel
@@ -298,7 +302,7 @@ namespace ExcelSheetManager.Views
             _tblVung1.Controls.Add(_pnlVung1Footer, 0, 2);
             _splitContainer.Panel1.Controls.Add(_tblVung1);
 
-            // --- VÙNG 2: TABLE LAYOUT (ROW 0: HEADER 52px, ROW 1: LISTBOX 100%, ROW 2: FOOTER STATUS 22px) ---
+            // --- VÙNG 2: TABLE LAYOUT (ROW 0: HEADER 58px, ROW 1: LISTBOX 100%, ROW 2: FOOTER STATUS 22px) ---
             _tblVung2 = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
@@ -308,21 +312,25 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(0)
             };
             _tblVung2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 52f));
+            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 58f));
             _tblVung2.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
             _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));
 
-            _pnlVung2Header = new Panel
+            _pnlVung2Header = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
+                ColumnCount = 1,
+                RowCount = 2,
                 Margin = new Padding(0),
                 Padding = new Padding(6, 4, 6, 2)
             };
+            _pnlVung2Header.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
+            _pnlVung2Header.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f)); // Row 0: Buttons
+            _pnlVung2Header.RowStyles.Add(new RowStyle(SizeType.Absolute, 26f)); // Row 1: Filter TextBox
 
             _pnlVung2Top = new Panel
             {
-                Dock = DockStyle.Top,
-                Height = 24,
+                Dock = DockStyle.Fill,
                 Margin = new Padding(0)
             };
 
@@ -385,15 +393,15 @@ namespace ExcelSheetManager.Views
 
             _txtFilterSheet = new TextBox
             {
-                Dock = DockStyle.Bottom,
+                Dock = DockStyle.Fill,
                 BorderStyle = BorderStyle.FixedSingle,
                 Font = new Font("Segoe UI", 9f),
                 Text = ""
             };
             _txtFilterSheet.TextChanged += (s, e) => FilterSheetsList();
 
-            _pnlVung2Header.Controls.Add(_pnlVung2Top);
-            _pnlVung2Header.Controls.Add(_txtFilterSheet);
+            _pnlVung2Header.Controls.Add(_pnlVung2Top, 0, 0);
+            _pnlVung2Header.Controls.Add(_txtFilterSheet, 0, 1);
 
             // VUNG 2 FOOTER STATUS BAR (Prevents overlap when TaskPane is narrowed!)
             _pnlVung2Footer = new Panel
