@@ -291,7 +291,7 @@ namespace ExcelSheetManager.Views
                 systemPrompt = _cmbMode.SelectedIndex switch
                 {
                     0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
-                    2 => "You are an expert Excel data analyst. Analyze the provided cell formula and evaluated value carefully. Explain clearly step-by-step in Vietnamese:\n1) Direct explanation of the formula logic and calculation step-by-step\n2) Explanation of each function used (e.g. ROUND, SUBTOTAL, VLOOKUP) and its arguments\n3) The final calculated output value.",
+                    2 => "You are an expert Excel data analyst. The user needs an explanation of the Excel formula at the selected cell.\n\nCRITICAL INSTRUCTIONS:\n- You MUST explain the EXACT Excel formula provided in the context (starting with =).\n- Explain step-by-step in clear, professional Vietnamese:\n  1. What the overall formula calculates\n  2. The function and purpose of each component (e.g. ROUND, SUBTOTAL, range arguments)\n  3. Why this formula is structured this way and what the final result means.\n- DO NOT claim there is no formula if a formula starting with = is provided.",
                     _ => "You are an intelligent, helpful AI assistant integrated inside Microsoft Excel. Answer the user's question clearly, concisely, and accurately in Vietnamese with step-by-step instructions or explanations."
                 };
             }
@@ -313,6 +313,48 @@ namespace ExcelSheetManager.Views
             {
                 _btnSend.Enabled = true;
             }
+        }
+
+        private static string ExtractFormulaFromRange(Excel.Range? range)
+        {
+            if (range == null) return string.Empty;
+            try
+            {
+                try
+                {
+                    object f2 = range.Formula2;
+                    if (f2 != null)
+                    {
+                        string s = f2.ToString().Trim();
+                        if (s.StartsWith("=")) return s;
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    object f1 = range.Formula;
+                    if (f1 != null)
+                    {
+                        string s = f1.ToString().Trim();
+                        if (s.StartsWith("=")) return s;
+                    }
+                }
+                catch { }
+
+                try
+                {
+                    object fl = range.FormulaLocal;
+                    if (fl != null)
+                    {
+                        string s = fl.ToString().Trim();
+                        if (s.StartsWith("=")) return s;
+                    }
+                }
+                catch { }
+            }
+            catch { }
+            return string.Empty;
         }
 
         private (string EnrichedPrompt, string LogMessage) EnrichPromptWithExcelCellData(string userPrompt)
@@ -366,25 +408,13 @@ namespace ExcelSheetManager.Views
                                 {
                                     object raw = range.Value2 ?? range.Value;
                                     string textVal = raw != null ? raw.ToString() : "(Ô trống)";
-
-                                    string formulaVal = string.Empty;
-                                    try
-                                    {
-                                        object fObj = range.Formula2 ?? range.Formula;
-                                        if (fObj != null)
-                                        {
-                                            string fStr = fObj.ToString();
-                                            if (fStr.StartsWith("="))
-                                            {
-                                                formulaVal = fStr;
-                                            }
-                                        }
-                                    }
-                                    catch { }
+                                    string formulaVal = ExtractFormulaFromRange(range);
 
                                     if (!string.IsNullOrEmpty(formulaVal))
                                     {
-                                        sb.AppendLine($"[Cell {cellRef}]: Formula = \"{formulaVal}\", Evaluated Value = \"{textVal}\"");
+                                        sb.AppendLine($"[Cell {cellRef}]:");
+                                        sb.AppendLine($"  - FORMULA: {formulaVal}");
+                                        sb.AppendLine($"  - EVALUATED VALUE: {textVal}");
                                         readSummary.Add($"{cellRef} (Formula: {formulaVal})");
                                     }
                                     else
@@ -402,47 +432,41 @@ namespace ExcelSheetManager.Views
                         }
                     }
 
-                    // If no specific cell ref in prompt, read current ActiveCell if available
-                    if (!addedContext && excelApp.ActiveCell != null)
+                    // If no specific cell ref in prompt, read current ActiveCell or Selection if available
+                    if (!addedContext)
                     {
-                        try
+                        Excel.Range? activeCell = null;
+                        try { activeCell = excelApp.ActiveCell; } catch { }
+                        if (activeCell == null)
                         {
-                            Excel.Range activeCell = excelApp.ActiveCell;
-                            object raw = activeCell.Value2 ?? activeCell.Value;
-                            string textVal = raw != null ? raw.ToString() : "(Ô trống)";
+                            try { activeCell = excelApp.Selection as Excel.Range; } catch { }
+                        }
 
-                            string formulaVal = string.Empty;
+                        if (activeCell != null)
+                        {
                             try
                             {
-                                object fObj = activeCell.Formula2 ?? activeCell.Formula;
-                                if (fObj != null)
-                                {
-                                    string fStr = fObj.ToString();
-                                    if (fStr.StartsWith("="))
-                                    {
-                                        formulaVal = fStr;
-                                    }
-                                }
-                            }
-                            catch { }
+                                object raw = activeCell.Value2 ?? activeCell.Value;
+                                string textVal = raw != null ? raw.ToString() : "(Ô trống)";
+                                string formulaVal = ExtractFormulaFromRange(activeCell);
 
-                            if (!string.IsNullOrEmpty(formulaVal) || (raw != null && !string.IsNullOrEmpty(textVal)))
-                            {
                                 string addr = activeCell.Address[false, false];
                                 sb.AppendLine("\n--- DỮ LIỆU VÀ CÔNG THỨC ĐỌC TỰ ĐỘNG TỪ Ô ĐANG CHỌN ---");
                                 if (!string.IsNullOrEmpty(formulaVal))
                                 {
-                                    sb.AppendLine($"[Cell {addr}]: Formula = \"{formulaVal}\", Evaluated Value = \"{textVal}\"");
+                                    sb.AppendLine($"[Cell {addr}]:");
+                                    sb.AppendLine($"  - FORMULA: {formulaVal}");
+                                    sb.AppendLine($"  - EVALUATED VALUE: {textVal}");
                                     readSummary.Add($"Active {addr} (Formula: {formulaVal})");
                                 }
-                                else
+                                else if (raw != null && !string.IsNullOrEmpty(textVal))
                                 {
                                     sb.AppendLine($"[Cell {addr}]: Value = \"{textVal}\"");
                                     readSummary.Add($"Active {addr}=\"{textVal}\"");
                                 }
                             }
+                            catch { }
                         }
-                        catch { }
                     }
                 }
 
