@@ -291,8 +291,8 @@ namespace ExcelSheetManager.Views
                 systemPrompt = _cmbMode.SelectedIndex switch
                 {
                     0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
-                    2 => "You are an Excel data analyst. Explain the user's Excel formula or data clearly and concisely.",
-                    _ => "You are an intelligent AI assistant integrated inside Microsoft Excel."
+                    2 => "You are an expert Excel data analyst. Analyze the provided cell formula and evaluated value carefully. Explain clearly step-by-step in Vietnamese:\n1) Direct explanation of the formula logic and calculation step-by-step\n2) Explanation of each function used (e.g. ROUND, SUBTOTAL, VLOOKUP) and its arguments\n3) The final calculated output value.",
+                    _ => "You are an intelligent, helpful AI assistant integrated inside Microsoft Excel. Answer the user's question clearly, concisely, and accurately in Vietnamese with step-by-step instructions or explanations."
                 };
             }
 
@@ -356,7 +356,7 @@ namespace ExcelSheetManager.Views
 
                     if (foundRefs.Count > 0)
                     {
-                        sb.AppendLine("\n--- DỮ LIỆU ĐỌC TỰ ĐỘNG TỪ EXCEL ---");
+                        sb.AppendLine("\n--- DỮ LIỆU VÀ CÔNG THỨC ĐỌC TỰ ĐỘNG TỪ EXCEL ---");
                         foreach (string cellRef in foundRefs)
                         {
                             try
@@ -366,8 +366,32 @@ namespace ExcelSheetManager.Views
                                 {
                                     object raw = range.Value2 ?? range.Value;
                                     string textVal = raw != null ? raw.ToString() : "(Ô trống)";
-                                    sb.AppendLine($"[Cell {cellRef}]: \"{textVal}\"");
-                                    readSummary.Add($"{cellRef}=\"{textVal}\"");
+
+                                    string formulaVal = string.Empty;
+                                    try
+                                    {
+                                        object fObj = range.Formula2 ?? range.Formula;
+                                        if (fObj != null)
+                                        {
+                                            string fStr = fObj.ToString();
+                                            if (fStr.StartsWith("="))
+                                            {
+                                                formulaVal = fStr;
+                                            }
+                                        }
+                                    }
+                                    catch { }
+
+                                    if (!string.IsNullOrEmpty(formulaVal))
+                                    {
+                                        sb.AppendLine($"[Cell {cellRef}]: Formula = \"{formulaVal}\", Evaluated Value = \"{textVal}\"");
+                                        readSummary.Add($"{cellRef} (Formula: {formulaVal})");
+                                    }
+                                    else
+                                    {
+                                        sb.AppendLine($"[Cell {cellRef}]: Value = \"{textVal}\"");
+                                        readSummary.Add($"{cellRef}=\"{textVal}\"");
+                                    }
                                     addedContext = true;
                                 }
                             }
@@ -385,12 +409,37 @@ namespace ExcelSheetManager.Views
                         {
                             Excel.Range activeCell = excelApp.ActiveCell;
                             object raw = activeCell.Value2 ?? activeCell.Value;
-                            if (raw != null && !string.IsNullOrEmpty(raw.ToString()))
+                            string textVal = raw != null ? raw.ToString() : "(Ô trống)";
+
+                            string formulaVal = string.Empty;
+                            try
+                            {
+                                object fObj = activeCell.Formula2 ?? activeCell.Formula;
+                                if (fObj != null)
+                                {
+                                    string fStr = fObj.ToString();
+                                    if (fStr.StartsWith("="))
+                                    {
+                                        formulaVal = fStr;
+                                    }
+                                }
+                            }
+                            catch { }
+
+                            if (!string.IsNullOrEmpty(formulaVal) || (raw != null && !string.IsNullOrEmpty(textVal)))
                             {
                                 string addr = activeCell.Address[false, false];
-                                sb.AppendLine("\n--- DỮ LIỆU ĐỌC TỰ ĐỘNG TỪ Ô ĐANG CHỌN ---");
-                                sb.AppendLine($"[Cell {addr}]: \"{raw}\"");
-                                readSummary.Add($"Active {addr}=\"{raw}\"");
+                                sb.AppendLine("\n--- DỮ LIỆU VÀ CÔNG THỨC ĐỌC TỰ ĐỘNG TỪ Ô ĐANG CHỌN ---");
+                                if (!string.IsNullOrEmpty(formulaVal))
+                                {
+                                    sb.AppendLine($"[Cell {addr}]: Formula = \"{formulaVal}\", Evaluated Value = \"{textVal}\"");
+                                    readSummary.Add($"Active {addr} (Formula: {formulaVal})");
+                                }
+                                else
+                                {
+                                    sb.AppendLine($"[Cell {addr}]: Value = \"{textVal}\"");
+                                    readSummary.Add($"Active {addr}=\"{textVal}\"");
+                                }
                             }
                         }
                         catch { }
