@@ -105,7 +105,7 @@ namespace ExcelSheetManager.Views
                 Height = 80,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                Text = "Hãy dịch nội dung tại cell B1 từ tiếng Nhật sang tiếng Việt"
+                Text = "Hãy dịch nội dung tại cell đang chọn từ tiếng Nhật sang tiếng Việt"
             };
 
             _btnSend = new Button
