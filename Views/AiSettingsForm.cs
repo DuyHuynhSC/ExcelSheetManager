@@ -17,8 +17,8 @@ namespace ExcelSheetManager.Views
 
         public AiSettingsForm()
         {
-            this.Size = new Size(540, 430);
-            this.Text = "⚙️ Local AI Settings (OpenAI Compatible)";
+            this.Size = new Size(535, 410);
+            this.Text = "Local AI Connection Settings";
             this.FormBorderStyle = FormBorderStyle.FixedDialog;
             this.StartPosition = FormStartPosition.CenterScreen;
             this.MaximizeBox = false;
@@ -76,7 +76,7 @@ namespace ExcelSheetManager.Views
             // Buttons
             _btnTest = new Button
             {
-                Text = "🔍 Test Connection",
+                Text = "Test Connection",
                 Location = new Point(230, y),
                 Width = 140,
                 Height = 32,
@@ -91,7 +91,7 @@ namespace ExcelSheetManager.Views
 
             _btnSave = new Button
             {
-                Text = "💾 Save & Close",
+                Text = "Save & Close",
                 Location = new Point(380, y),
                 Width = 120,
                 Height = 32,

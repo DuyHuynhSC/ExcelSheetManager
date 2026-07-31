@@ -50,7 +50,7 @@ namespace ExcelSheetManager.Views
         public AiAssistantForm()
         {
             this.Size = new Size(580, 490);
-            this.Text = "🤖 Local AI Assistant for Excel";
+            this.Text = "Local AI Assistant for Excel";
             this.StartPosition = FormStartPosition.CenterScreen;
             this.TopMost = true;
 
@@ -81,15 +81,15 @@ namespace ExcelSheetManager.Views
                 Width = 250,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
-            _cmbMode.Items.Add("⚡ Generate Excel Formula");
-            _cmbMode.Items.Add("🌐 Translate Cell / Range (Dịch thuật)");
-            _cmbMode.Items.Add("🔍 Explain Sheet / Formula");
-            _cmbMode.Items.Add("💬 General Excel Assistant");
+            _cmbMode.Items.Add("Generate Excel Formula");
+            _cmbMode.Items.Add("Translate Cell / Range (Dịch thuật)");
+            _cmbMode.Items.Add("Explain Sheet / Formula");
+            _cmbMode.Items.Add("General Excel Assistant");
             _cmbMode.SelectedIndex = 1; // Default to Translate mode
 
             _btnSettings = new Button
             {
-                Text = "⚙️ Settings",
+                Text = "Settings",
                 Location = new Point(440, 6),
                 Width = 110,
                 Height = 26,
@@ -105,12 +105,12 @@ namespace ExcelSheetManager.Views
                 Height = 80,
                 Multiline = true,
                 ScrollBars = ScrollBars.Vertical,
-                Text = "Hãy dịch nội dung tại cell đang chọn từ tiếng Nhật sang tiếng Việt"
+                Text = "Hãy dịch nội dung tại cell B1 từ tiếng Nhật sang tiếng Việt"
             };
 
             _btnSend = new Button
             {
-                Text = "🚀 Send",
+                Text = "Send",
                 Location = new Point(440, 40),
                 Width = 110,
                 Height = 80,
@@ -129,38 +129,35 @@ namespace ExcelSheetManager.Views
             pnlTop.Controls.Add(_txtPrompt);
             pnlTop.Controls.Add(_btnSend);
 
-            // Bottom Panel
-            Panel pnlBottom = new Panel
+            // Bottom Panel (TableLayoutPanel prevents _lblStatus from overlapping buttons)
+            TableLayoutPanel pnlBottom = new TableLayoutPanel
             {
                 Dock = DockStyle.Bottom,
-                Height = 44,
-                Padding = new Padding(12, 6, 12, 6)
+                Height = 46,
+                ColumnCount = 3,
+                RowCount = 1,
+                Padding = new Padding(8, 4, 8, 4),
+                Margin = new Padding(0)
             };
+            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f)); // Status label gets remaining space
+            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 150f)); // Insert into Cell button
+            pnlBottom.ColumnStyles.Add(new ColumnStyle(SizeType.Absolute, 115f)); // Copy Text button
+            pnlBottom.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
 
             _lblStatus = new Label
             {
-                Dock = DockStyle.Left,
-                AutoSize = true,
+                Dock = DockStyle.Fill,
                 TextAlign = ContentAlignment.MiddleLeft,
+                AutoEllipsis = true,
                 Text = "Specify cell (e.g. B1) in prompt for auto-reading Excel data.",
                 ForeColor = Color.FromArgb(148, 163, 184)
             };
 
-            _btnCopy = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 120,
-                Text = "📋 Copy Text",
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnCopy.Click += (s, e) => CopyResponse();
-
             _btnInsertCell = new Button
             {
-                Dock = DockStyle.Right,
-                Width = 150,
-                Text = "📥 Insert into Cell",
+                Dock = DockStyle.Fill,
+                Margin = new Padding(2),
+                Text = "Insert into Cell",
                 BackColor = Color.FromArgb(16, 185, 129),
                 ForeColor = Color.White,
                 Font = new Font("Segoe UI", 9f, FontStyle.Bold),
@@ -170,9 +167,19 @@ namespace ExcelSheetManager.Views
             _btnInsertCell.FlatAppearance.BorderSize = 0;
             _btnInsertCell.Click += (s, e) => InsertIntoActiveCell();
 
-            pnlBottom.Controls.Add(_lblStatus);
-            pnlBottom.Controls.Add(_btnInsertCell);
-            pnlBottom.Controls.Add(_btnCopy);
+            _btnCopy = new Button
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(2),
+                Text = "Copy Text",
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnCopy.Click += (s, e) => CopyResponse();
+
+            pnlBottom.Controls.Add(_lblStatus, 0, 0);
+            pnlBottom.Controls.Add(_btnInsertCell, 1, 0);
+            pnlBottom.Controls.Add(_btnCopy, 2, 0);
 
             // Middle Response Panel
             _txtResponse = new TextBox
@@ -278,7 +285,7 @@ namespace ExcelSheetManager.Views
 
                 List<string> readSummary = new List<string>();
 
-                if (excelApp.ActiveSheet is Excel.Worksheet activeWs)
+                if (excelApp?.ActiveSheet is Excel.Worksheet activeWs)
                 {
                     bool addedContext = false;
 
@@ -326,7 +333,7 @@ namespace ExcelSheetManager.Views
                 }
 
                 string statusMsg = readSummary.Count > 0
-                    ? $"✓ Read Excel: {string.Join(", ", readSummary)}"
+                    ? $"Read Excel: {string.Join(", ", readSummary)}"
                     : "No Excel cells referenced or active cell is empty.";
 
                 return (sb.ToString(), statusMsg);
