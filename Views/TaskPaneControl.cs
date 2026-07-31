@@ -75,6 +75,7 @@ namespace ExcelSheetManager.Views
         private ToolStripMenuItem _miCopyWbName = null!;
         private ToolStripMenuItem _miCopyWbPath = null!;
         private ToolStripMenuItem _miOpenFolder = null!;
+        private ToolStripMenuItem _miCloseWb = null!;
 
         // Context Menu Vung 2 (Sheet)
         private ContextMenuStrip _cmsSheetMenu = null!;
@@ -292,10 +293,14 @@ namespace ExcelSheetManager.Views
             _miOpenFolder = new ToolStripMenuItem("📂 Open File Location");
             _miOpenFolder.Click += (s, e) => OpenSelectedWorkbookFolder();
 
+            _miCloseWb = new ToolStripMenuItem("Close File");
+            _miCloseWb.Click += (s, e) => CloseSelectedWorkbook();
+
             _cmsWorkbookMenu.Items.Add(_miCopyWbName);
             _cmsWorkbookMenu.Items.Add(_miCopyWbPath);
-            _cmsWorkbookMenu.Items.Add(new ToolStripSeparator());
             _cmsWorkbookMenu.Items.Add(_miOpenFolder);
+            _cmsWorkbookMenu.Items.Add(new ToolStripSeparator());
+            _cmsWorkbookMenu.Items.Add(_miCloseWb);
 
             _tblVung1.Controls.Add(_pnlVung1Header, 0, 0);
             _tblVung1.Controls.Add(_lstWorkbooks, 0, 1);
@@ -622,6 +627,46 @@ namespace ExcelSheetManager.Views
             catch (Exception ex)
             {
                 _lblStatus.Text = $"Could not open folder: {ex.Message}";
+            }
+        }
+
+        private void CloseSelectedWorkbook()
+        {
+            try
+            {
+                if (_selectedWorkbook?.WorkbookRef is Excel.Workbook wb)
+                {
+                    string wbName = wb.Name;
+
+                    if (!wb.Saved)
+                    {
+                        DialogResult dr = MessageBox.Show(
+                            $"File '{wbName}' has unsaved changes. Do you want to save changes before closing?",
+                            "Save Changes?",
+                            MessageBoxButtons.YesNoCancel,
+                            MessageBoxIcon.Question
+                        );
+
+                        if (dr == DialogResult.Cancel) return;
+
+                        if (dr == DialogResult.Yes)
+                        {
+                            wb.Save();
+                        }
+                        else
+                        {
+                            wb.Saved = true; // Bypass unsaved changes prompt if user clicked No
+                        }
+                    }
+
+                    wb.Close(SaveChanges: false);
+                    _lblStatus.Text = $"Closed file: \"{wbName}\"";
+                    RefreshData();
+                }
+            }
+            catch (Exception ex)
+            {
+                _lblStatus.Text = $"Could not close file: {ex.Message}";
             }
         }
 
