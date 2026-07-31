@@ -33,7 +33,7 @@ namespace ExcelSheetManager.Views
 
         // Theme Flag & Colors
         private bool _isDarkTheme = true;
-        private bool _showHiddenSheetsInList = true; // Toggle for Vung 2 filter list
+        private bool _showHiddenSheetsInList = false; // Default to hiding hidden sheets in Vung 2 list
 
         private Color _bgColor;
         private Color _cardColor;
