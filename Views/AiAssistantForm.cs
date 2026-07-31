@@ -82,6 +82,15 @@ namespace ExcelSheetManager.Views
                 Width = 230,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
+            _txtPrompt = new TextBox
+            {
+                Location = new Point(12, 40),
+                Width = 420,
+                Height = 80,
+                Multiline = true,
+                ScrollBars = ScrollBars.Vertical
+            };
+
             _cmbMode.Items.Add("Generate Excel Formula");
             _cmbMode.Items.Add("Translate Cell / Range (Dịch thuật)");
             _cmbMode.Items.Add("Explain Sheet / Formula");
@@ -110,16 +119,6 @@ namespace ExcelSheetManager.Views
                 Cursor = Cursors.Hand
             };
             _btnSettings.Click += (s, e) => OpenSettings();
-
-            _txtPrompt = new TextBox
-            {
-                Location = new Point(12, 40),
-                Width = 420,
-                Height = 80,
-                Multiline = true,
-                ScrollBars = ScrollBars.Vertical
-            };
-            UpdatePromptTemplateForMode();
 
             _btnSend = new Button
             {
@@ -234,6 +233,7 @@ namespace ExcelSheetManager.Views
 
         private void UpdatePromptTemplateForMode()
         {
+            if (_txtPrompt == null) return;
             _txtPrompt.Text = _cmbMode.SelectedIndex switch
             {
                 0 => "Viết công thức tính tổng cột B từ B2 đến B50 nếu cột A từ A2 đến A50 bằng 'Đã thanh toán'",
