@@ -199,5 +199,53 @@ namespace ExcelSheetManager.Helpers
             }
             catch { }
         }
+
+        // --- GLOSSARY (JP - VN) SETTINGS ---
+        private const string GlossaryValueName = "AiGlossaryJpVn";
+        private static string GlossaryFilePath => Path.Combine(AppDataDir, "glossary_jp_vn.txt");
+
+        public static string GetGlossaryText()
+        {
+            string defaultGlossary = "売上=Doanh thu\r\n利益=Lợi nhuận\r\n勘定科目=Tài khoản kế toán\r\n残高=Số dư\r\n振込=Chuyển khoản\r\n税込=Đã bao gồm thuế\r\n税抜=Chưa bao gồm thuế\r\n請求書=Hóa đơn\r\n納品書=Biên bản giao hàng\r\n発注書=Đơn đặt hàng";
+
+            try
+            {
+                using var key = Registry.CurrentUser.OpenSubKey(KeyPath);
+                if (key != null)
+                {
+                    object val = key.GetValue(GlossaryValueName, null);
+                    if (val != null && !string.IsNullOrEmpty(val.ToString())) return val.ToString()!;
+                }
+            }
+            catch { }
+
+            try
+            {
+                if (File.Exists(GlossaryFilePath))
+                {
+                    string text = File.ReadAllText(GlossaryFilePath).Trim();
+                    if (!string.IsNullOrEmpty(text)) return text;
+                }
+            }
+            catch { }
+
+            return defaultGlossary;
+        }
+
+        public static void SetGlossaryText(string text)
+        {
+            try
+            {
+                using var key = Registry.CurrentUser.CreateSubKey(KeyPath);
+                key?.SetValue(GlossaryValueName, text, RegistryValueKind.String);
+            }
+            catch { }
+
+            try
+            {
+                File.WriteAllText(GlossaryFilePath, text);
+            }
+            catch { }
+        }
     }
 }

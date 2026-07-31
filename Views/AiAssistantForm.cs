@@ -42,6 +42,7 @@ namespace ExcelSheetManager.Views
         private Button _btnSend = null!;
         private Button _btnCopy = null!;
         private Button _btnInsertCell = null!;
+        private Button _btnGlossary = null!;
         private Button _btnSettings = null!;
         private Label _lblStatus = null!;
 
@@ -74,11 +75,11 @@ namespace ExcelSheetManager.Views
                 Padding = new Padding(12, 10, 12, 6)
             };
 
-            Label lblMode = new Label { Text = "AI Task Mode:", Location = new Point(12, 10), AutoSize = true, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
+            Label lblMode = new Label { Text = "Mode:", Location = new Point(12, 10), AutoSize = true, Font = new Font("Segoe UI", 9f, FontStyle.Bold) };
             _cmbMode = new ComboBox
             {
-                Location = new Point(110, 6),
-                Width = 250,
+                Location = new Point(65, 6),
+                Width = 230,
                 DropDownStyle = ComboBoxStyle.DropDownList
             };
             _cmbMode.Items.Add("Generate Excel Formula");
@@ -86,6 +87,17 @@ namespace ExcelSheetManager.Views
             _cmbMode.Items.Add("Explain Sheet / Formula");
             _cmbMode.Items.Add("General Excel Assistant");
             _cmbMode.SelectedIndex = 1; // Default to Translate mode
+
+            _btnGlossary = new Button
+            {
+                Text = "Glossary (JP-VN)",
+                Location = new Point(305, 6),
+                Width = 125,
+                Height = 26,
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnGlossary.Click += (s, e) => OpenGlossary();
 
             _btnSettings = new Button
             {
@@ -125,6 +137,7 @@ namespace ExcelSheetManager.Views
 
             pnlTop.Controls.Add(lblMode);
             pnlTop.Controls.Add(_cmbMode);
+            pnlTop.Controls.Add(_btnGlossary);
             pnlTop.Controls.Add(_btnSettings);
             pnlTop.Controls.Add(_txtPrompt);
             pnlTop.Controls.Add(_btnSend);
@@ -209,6 +222,15 @@ namespace ExcelSheetManager.Views
             }
         }
 
+        private void OpenGlossary()
+        {
+            using (GlossaryForm form = new GlossaryForm())
+            {
+                form.TopMost = true;
+                form.ShowDialog(this);
+            }
+        }
+
         private async Task SendPromptAsync()
         {
             string prompt = _txtPrompt.Text.Trim();
@@ -223,13 +245,44 @@ namespace ExcelSheetManager.Views
             var (enrichedPrompt, logMessage) = EnrichPromptWithExcelCellData(prompt);
             _lblStatus.Text = logMessage;
 
-            string systemPrompt = _cmbMode.SelectedIndex switch
+            string systemPrompt;
+            if (_cmbMode.SelectedIndex == 1) // Translate Cell / Range Mode
             {
-                0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
-                1 => "You are an expert translator integrated in Microsoft Excel. Read the provided cell content carefully and translate it accurately as requested. Output ONLY the translated text without extra conversational fluff.",
-                2 => "You are an Excel data analyst. Explain the user's Excel formula or data clearly and concisely.",
-                _ => "You are an intelligent AI assistant integrated inside Microsoft Excel."
-            };
+                StringBuilder sbSystem = new StringBuilder();
+                sbSystem.AppendLine("You are an expert Japanese-to-Vietnamese translator integrated inside Microsoft Excel.");
+                sbSystem.AppendLine("Read the provided cell content carefully and translate it accurately into natural Vietnamese as requested.");
+
+                string glossaryText = SettingsHelper.GetGlossaryText();
+                if (!string.IsNullOrEmpty(glossaryText))
+                {
+                    sbSystem.AppendLine("\nGLOSSARY / TERMINOLOGY DICTIONARY (STRICTLY ENFORCE THESE TERM TRANSLATIONS):");
+                    string[] lines = glossaryText.Split(new[] { '\r', '\n' }, StringSplitOptions.RemoveEmptyEntries);
+                    foreach (string line in lines)
+                    {
+                        string trimmed = line.Trim();
+                        if (trimmed.Contains("="))
+                        {
+                            string[] parts = trimmed.Split(new[] { '=' }, 2);
+                            if (parts.Length == 2 && !string.IsNullOrEmpty(parts[0]) && !string.IsNullOrEmpty(parts[1]))
+                            {
+                                sbSystem.AppendLine($"- Translate \"{parts[0].Trim()}\" as \"{parts[1].Trim()}\"");
+                            }
+                        }
+                    }
+                }
+
+                sbSystem.AppendLine("Output ONLY the translated text without extra conversational fluff.");
+                systemPrompt = sbSystem.ToString();
+            }
+            else
+            {
+                systemPrompt = _cmbMode.SelectedIndex switch
+                {
+                    0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
+                    2 => "You are an Excel data analyst. Explain the user's Excel formula or data clearly and concisely.",
+                    _ => "You are an intelligent AI assistant integrated inside Microsoft Excel."
+                };
+            }
 
             try
             {
