@@ -52,6 +52,7 @@ namespace ExcelSheetManager.Views
 
         private Panel _pnlVung1Header = null!;
         private Panel _pnlVung1Top = null!;
+        private Panel _pnlVung1Footer = null!;
         private Label _lblVung1Title = null!;
         private Button _btnRefresh = null!;
         private Button _btnTheme = null!;
@@ -61,6 +62,7 @@ namespace ExcelSheetManager.Views
 
         private Panel _pnlVung2Header = null!;
         private Panel _pnlVung2Top = null!;
+        private Panel _pnlVung2Footer = null!;
         private Label _lblVung2Title = null!;
         private Button _btnToc = null!;
         private Button _btnToggleHidden = null!;
@@ -150,24 +152,25 @@ namespace ExcelSheetManager.Views
                 Margin = new Padding(0)
             };
 
-            // --- VÙNG 1: TABLE LAYOUT (ROW 0: HEADER 55px, ROW 1: LISTBOX 100%) ---
+            // --- VÙNG 1: TABLE LAYOUT (ROW 0: HEADER 52px, ROW 1: LISTBOX 100%, ROW 2: FOOTER STATUS 22px) ---
             _tblVung1 = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 2,
+                RowCount = 3,
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
             _tblVung1.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));
+            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 52f));
             _tblVung1.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            _tblVung1.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));
 
             _pnlVung1Header = new Panel
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                Padding = new Padding(6, 4, 6, 4)
+                Padding = new Padding(6, 4, 6, 2)
             };
 
             _pnlVung1Top = new Panel
@@ -175,16 +178,6 @@ namespace ExcelSheetManager.Views
                 Dock = DockStyle.Top,
                 Height = 24,
                 Margin = new Padding(0)
-            };
-
-            _lblVung1Title = new Label
-            {
-                Text = "OPEN FILES",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(56, 189, 248),
-                Dock = DockStyle.Left,
-                AutoSize = true,
-                TextAlign = ContentAlignment.MiddleLeft
             };
 
             // AI Assistant Button (Far Right of Vung 1 - Rose Pink #EC4899)
@@ -236,7 +229,6 @@ namespace ExcelSheetManager.Views
             _btnRefresh.FlatAppearance.BorderSize = 0;
             _btnRefresh.Click += (s, e) => RefreshData();
 
-            _pnlVung1Top.Controls.Add(_lblVung1Title);
             _pnlVung1Top.Controls.Add(_btnAi);         // Far Right (AI)
             _pnlVung1Top.Controls.Add(spacerV1_1);      // Gap
             _pnlVung1Top.Controls.Add(_btnTheme);       // Middle (Theme)
@@ -254,6 +246,24 @@ namespace ExcelSheetManager.Views
 
             _pnlVung1Header.Controls.Add(_pnlVung1Top);
             _pnlVung1Header.Controls.Add(_txtFilterFile);
+
+            // VUNG 1 FOOTER STATUS BAR (Prevents overlap when TaskPane is narrowed!)
+            _pnlVung1Footer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
+                Padding = new Padding(8, 2, 8, 2)
+            };
+
+            _lblVung1Title = new Label
+            {
+                Text = "OPEN FILES",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(56, 189, 248),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            _pnlVung1Footer.Controls.Add(_lblVung1Title);
 
             _lstWorkbooks = new ListBox
             {
@@ -285,26 +295,28 @@ namespace ExcelSheetManager.Views
 
             _tblVung1.Controls.Add(_pnlVung1Header, 0, 0);
             _tblVung1.Controls.Add(_lstWorkbooks, 0, 1);
+            _tblVung1.Controls.Add(_pnlVung1Footer, 0, 2);
             _splitContainer.Panel1.Controls.Add(_tblVung1);
 
-            // --- VÙNG 2: TABLE LAYOUT (ROW 0: HEADER 55px, ROW 1: LISTBOX 100%) ---
+            // --- VÙNG 2: TABLE LAYOUT (ROW 0: HEADER 52px, ROW 1: LISTBOX 100%, ROW 2: FOOTER STATUS 22px) ---
             _tblVung2 = new TableLayoutPanel
             {
                 Dock = DockStyle.Fill,
                 ColumnCount = 1,
-                RowCount = 2,
+                RowCount = 3,
                 Margin = new Padding(0),
                 Padding = new Padding(0)
             };
             _tblVung2.ColumnStyles.Add(new ColumnStyle(SizeType.Percent, 100f));
-            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 55f));
+            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 52f));
             _tblVung2.RowStyles.Add(new RowStyle(SizeType.Percent, 100f));
+            _tblVung2.RowStyles.Add(new RowStyle(SizeType.Absolute, 22f));
 
             _pnlVung2Header = new Panel
             {
                 Dock = DockStyle.Fill,
                 Margin = new Padding(0),
-                Padding = new Padding(6, 4, 6, 4)
+                Padding = new Padding(6, 4, 6, 2)
             };
 
             _pnlVung2Top = new Panel
@@ -312,16 +324,6 @@ namespace ExcelSheetManager.Views
                 Dock = DockStyle.Top,
                 Height = 24,
                 Margin = new Padding(0)
-            };
-
-            _lblVung2Title = new Label
-            {
-                Text = "SHEETS",
-                Font = new Font("Segoe UI", 9.5f, FontStyle.Bold),
-                ForeColor = Color.FromArgb(129, 140, 248),
-                Dock = DockStyle.Left,
-                AutoSize = true,
-                TextAlign = ContentAlignment.MiddleLeft
             };
 
             // Copy Sheet Name Button (Far Right - Emerald Green #16A34A)
@@ -375,7 +377,6 @@ namespace ExcelSheetManager.Views
             _btnToc.FlatAppearance.BorderSize = 0;
             _btnToc.Click += (s, e) => GenerateTableOfContents();
 
-            _pnlVung2Top.Controls.Add(_lblVung2Title);
             _pnlVung2Top.Controls.Add(_btnCopySheetName);  // Far Right (Green)
             _pnlVung2Top.Controls.Add(spacerV2_1);          // Gap
             _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Middle (Blue)
@@ -393,6 +394,24 @@ namespace ExcelSheetManager.Views
 
             _pnlVung2Header.Controls.Add(_pnlVung2Top);
             _pnlVung2Header.Controls.Add(_txtFilterSheet);
+
+            // VUNG 2 FOOTER STATUS BAR (Prevents overlap when TaskPane is narrowed!)
+            _pnlVung2Footer = new Panel
+            {
+                Dock = DockStyle.Fill,
+                Margin = new Padding(0),
+                Padding = new Padding(8, 2, 8, 2)
+            };
+
+            _lblVung2Title = new Label
+            {
+                Text = "SHEETS",
+                Font = new Font("Segoe UI", 8.5f, FontStyle.Bold),
+                ForeColor = Color.FromArgb(129, 140, 248),
+                Dock = DockStyle.Fill,
+                TextAlign = ContentAlignment.MiddleLeft
+            };
+            _pnlVung2Footer.Controls.Add(_lblVung2Title);
 
             _lstSheets = new ListBox
             {
@@ -452,6 +471,7 @@ namespace ExcelSheetManager.Views
 
             _tblVung2.Controls.Add(_pnlVung2Header, 0, 0);
             _tblVung2.Controls.Add(_lstSheets, 0, 1);
+            _tblVung2.Controls.Add(_pnlVung2Footer, 0, 2);
             _splitContainer.Panel2.Controls.Add(_tblVung2);
 
             _mainTable.Controls.Add(_splitContainer, 0, 0);
@@ -662,6 +682,7 @@ namespace ExcelSheetManager.Views
 
             _tblVung1.BackColor = _bgColor;
             _pnlVung1Header.BackColor = _bgColor;
+            _pnlVung1Footer.BackColor = _bgColor;
             _txtFilterFile.BackColor = _cardColor;
             _txtFilterFile.ForeColor = _textColor;
             _lstWorkbooks.BackColor = _bgColor;
@@ -669,6 +690,7 @@ namespace ExcelSheetManager.Views
 
             _tblVung2.BackColor = _bgColor;
             _pnlVung2Header.BackColor = _bgColor;
+            _pnlVung2Footer.BackColor = _bgColor;
             _txtFilterSheet.BackColor = _cardColor;
             _txtFilterSheet.ForeColor = _textColor;
             _lstSheets.BackColor = _bgColor;
