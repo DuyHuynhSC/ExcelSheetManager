@@ -201,7 +201,7 @@ namespace ExcelSheetManager.Views
                 Multiline = true,
                 ReadOnly = true,
                 ScrollBars = ScrollBars.Vertical,
-                Font = new Font("Consolas", 10f),
+                Font = new Font("Segoe UI", 9.5f),
                 BackColor = _isDarkTheme ? Color.FromArgb(30, 41, 59) : Color.White,
                 ForeColor = _isDarkTheme ? Color.FromArgb(248, 250, 252) : Color.FromArgb(15, 23, 42)
             };
@@ -291,15 +291,15 @@ namespace ExcelSheetManager.Views
                 systemPrompt = _cmbMode.SelectedIndex switch
                 {
                     0 => "You are an expert Excel formula generator. Output ONLY the exact Excel formula starting with =. Do not include markdown code block formatting or explanation unless asked.",
-                    2 => "You are an expert Excel data analyst. The user needs an explanation of the Excel formula at the selected cell.\n\nCRITICAL INSTRUCTIONS:\n- You MUST explain the EXACT Excel formula provided in the context (starting with =).\n- Explain step-by-step in clear, professional Vietnamese:\n  1. What the overall formula calculates\n  2. The function and purpose of each component (e.g. ROUND, SUBTOTAL, range arguments)\n  3. Why this formula is structured this way and what the final result means.\n- DO NOT claim there is no formula if a formula starting with = is provided.",
-                    _ => "You are an intelligent, helpful AI assistant integrated inside Microsoft Excel. Answer the user's question clearly, concisely, and accurately in Vietnamese with step-by-step instructions or explanations."
+                    2 => "You are an expert Excel data analyst. Explain the user's Excel formula concisely, clearly, and professionally in Vietnamese.\n\nSTRICT FORMATTING REQUIREMENTS:\n- Keep explanations brief, structured, and easy to read at a glance.\n- Avoid long paragraphs of text.\n\nUSE THIS STRUCTURE EXACTLY:\n📌 Ý NGHĨA CÔNG THỨC:\n[1-2 dòng giải thích ngắn gọn mục đích tính toán]\n\n🧩 CHI TIẾT CÁC HÀM SỬ DỤNG:\n  • [Hàm 1]: [Giải thích ngắn gọn 1 dòng]\n  • [Hàm 2]: [Giải thích ngắn gọn 1 dòng]\n\n💡 TÓM TẮT KẾT QUẢ:\n  • [Kết quả và lưu ý ngắn gọn]",
+                    _ => "You are an intelligent, helpful AI assistant integrated inside Microsoft Excel. Provide concise, structured answers in Vietnamese with bullet points."
                 };
             }
 
             try
             {
                 string result = await AiService.GetCompletionAsync(enrichedPrompt, systemPrompt);
-                _txtResponse.Text = result;
+                _txtResponse.Text = CleanMarkdownForWinForms(result);
                 _lblStatus.Text = string.IsNullOrEmpty(logMessage) ? "AI Response received successfully." : logMessage;
                 _lblStatus.ForeColor = Color.FromArgb(16, 185, 129);
             }
@@ -313,6 +313,32 @@ namespace ExcelSheetManager.Views
             {
                 _btnSend.Enabled = true;
             }
+        }
+
+        private static string CleanMarkdownForWinForms(string text)
+        {
+            if (string.IsNullOrEmpty(text)) return string.Empty;
+
+            // Normalize newlines
+            text = text.Replace("\r\n", "\n").Replace("\r", "\n");
+
+            // Remove markdown bold and backticks
+            text = text.Replace("**", "");
+            text = text.Replace("`", "");
+
+            // Format markdown headers ### Title -> 📌 Title
+            text = Regex.Replace(text, @"^#{1,6}\s*(.*)$", "📌 $1", RegexOptions.Multiline);
+
+            // Format horizontal lines --- -> separator line
+            text = Regex.Replace(text, @"^\s*---+\s*$", "──────────────────────────────────────", RegexOptions.Multiline);
+
+            // Format bullet points * or - -> •
+            text = Regex.Replace(text, @"^\s*[\*\-]\s+", "  • ", RegexOptions.Multiline);
+
+            // Restore Windows CRLF
+            text = text.Replace("\n", "\r\n");
+
+            return text.Trim();
         }
 
         private static (string Formula, string Value) ExtractFormulaAndValueFromRange(Excel.Range? range)
