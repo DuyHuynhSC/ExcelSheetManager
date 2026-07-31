@@ -86,6 +86,7 @@ namespace ExcelSheetManager.Views
             _cmbMode.Items.Add("Translate Cell / Range (Dịch thuật)");
             _cmbMode.Items.Add("Explain Sheet / Formula");
             _cmbMode.Items.Add("General Excel Assistant");
+            _cmbMode.SelectedIndexChanged += (s, e) => UpdatePromptTemplateForMode();
             _cmbMode.SelectedIndex = 1; // Default to Translate mode
 
             _btnGlossary = new Button
@@ -116,9 +117,9 @@ namespace ExcelSheetManager.Views
                 Width = 420,
                 Height = 80,
                 Multiline = true,
-                ScrollBars = ScrollBars.Vertical,
-                Text = "Hãy dịch nội dung tại cell đang chọn từ tiếng Nhật sang tiếng Việt"
+                ScrollBars = ScrollBars.Vertical
             };
+            UpdatePromptTemplateForMode();
 
             _btnSend = new Button
             {
@@ -229,6 +230,17 @@ namespace ExcelSheetManager.Views
                 form.TopMost = true;
                 form.ShowDialog(this);
             }
+        }
+
+        private void UpdatePromptTemplateForMode()
+        {
+            _txtPrompt.Text = _cmbMode.SelectedIndex switch
+            {
+                0 => "Viết công thức tính tổng cột B từ B2 đến B50 nếu cột A từ A2 đến A50 bằng 'Đã thanh toán'",
+                1 => "Hãy dịch nội dung tại cell đang chọn từ tiếng Nhật sang tiếng Việt",
+                2 => "Hãy giải thích công thức hoặc ý nghĩa dữ liệu tại ô đang chọn",
+                _ => "Cách lọc danh sách các hàng trùng lặp và tính tổng tự động trong Excel là gì?"
+            };
         }
 
         private async Task SendPromptAsync()
