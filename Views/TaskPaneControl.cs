@@ -184,44 +184,10 @@ namespace ExcelSheetManager.Views
                 Margin = new Padding(0)
             };
 
-            // AI Assistant Button (Far Right of Vung 1 - Rose Pink #EC4899)
-            _btnAi = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 36,
-                Text = "AI",
-                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                ForeColor = Color.White,
-                BackColor = Color.FromArgb(236, 72, 153),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnAi.FlatAppearance.BorderSize = 0;
-            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
-
-            // 4px Gap
-            Panel spacerV1_1 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
-
-            // Theme Toggle Button (Middle Right of Vung 1)
-            _btnTheme = new Button
-            {
-                Dock = DockStyle.Right,
-                Width = 52,
-                Text = _isDarkTheme ? "Light" : "Dark",
-                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
-                FlatStyle = FlatStyle.Flat,
-                Cursor = Cursors.Hand
-            };
-            _btnTheme.FlatAppearance.BorderSize = 0;
-            _btnTheme.Click += (s, e) => ToggleTheme();
-
-            // 4px Gap
-            Panel spacerV1_2 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
-
-            // Refresh Button (Left of Theme in Vung 1 - Blue #3B82F6)
+            // Refresh Button (Far Left in Vung 1 - Blue #3B82F6)
             _btnRefresh = new Button
             {
-                Dock = DockStyle.Right,
+                Dock = DockStyle.Left,
                 Width = 58,
                 Text = "Refresh",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
@@ -233,11 +199,45 @@ namespace ExcelSheetManager.Views
             _btnRefresh.FlatAppearance.BorderSize = 0;
             _btnRefresh.Click += (s, e) => RefreshData();
 
-            _pnlVung1Top.Controls.Add(_btnAi);         // Far Right (AI)
-            _pnlVung1Top.Controls.Add(spacerV1_1);      // Gap
-            _pnlVung1Top.Controls.Add(_btnTheme);       // Middle (Theme)
-            _pnlVung1Top.Controls.Add(spacerV1_2);      // Gap
-            _pnlVung1Top.Controls.Add(_btnRefresh);     // Left (Refresh)
+            // 4px Gap 1
+            Panel spacerV1_1 = new Panel { Dock = DockStyle.Left, Width = 4, BackColor = Color.Transparent };
+
+            // Theme Toggle Button (Middle Left of Vung 1)
+            _btnTheme = new Button
+            {
+                Dock = DockStyle.Left,
+                Width = 52,
+                Text = _isDarkTheme ? "Light" : "Dark",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnTheme.FlatAppearance.BorderSize = 0;
+            _btnTheme.Click += (s, e) => ToggleTheme();
+
+            // 4px Gap 2
+            Panel spacerV1_2 = new Panel { Dock = DockStyle.Left, Width = 4, BackColor = Color.Transparent };
+
+            // AI Assistant Button (Right of Theme in Vung 1 - Rose Pink #EC4899)
+            _btnAi = new Button
+            {
+                Dock = DockStyle.Left,
+                Width = 36,
+                Text = "AI",
+                Font = new Font("Segoe UI", 8f, FontStyle.Bold),
+                ForeColor = Color.White,
+                BackColor = Color.FromArgb(236, 72, 153),
+                FlatStyle = FlatStyle.Flat,
+                Cursor = Cursors.Hand
+            };
+            _btnAi.FlatAppearance.BorderSize = 0;
+            _btnAi.Click += (s, e) => AiAssistantForm.ShowForm();
+
+            _pnlVung1Top.Controls.Add(_btnRefresh);    // Far Left (Refresh)
+            _pnlVung1Top.Controls.Add(spacerV1_1);     // Gap
+            _pnlVung1Top.Controls.Add(_btnTheme);      // Middle (Theme)
+            _pnlVung1Top.Controls.Add(spacerV1_2);     // Gap
+            _pnlVung1Top.Controls.Add(_btnAi);         // Right of Theme (AI)
 
             _txtFilterFile = new TextBox
             {
@@ -334,28 +334,28 @@ namespace ExcelSheetManager.Views
                 Margin = new Padding(0)
             };
 
-            // Copy Sheet Name Button (Far Right - Emerald Green #16A34A)
-            _btnCopySheetName = new Button
+            // Table of Contents Generator Button (Far Left - Purple #8B5CF6)
+            _btnToc = new Button
             {
-                Dock = DockStyle.Right,
-                Width = 48,
-                Text = "Copy",
+                Dock = DockStyle.Left,
+                Width = 45,
+                Text = "TOC",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 ForeColor = Color.White,
-                BackColor = Color.FromArgb(16, 185, 129), // Emerald Green
+                BackColor = Color.FromArgb(139, 92, 246), // Purple
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
-            _btnCopySheetName.FlatAppearance.BorderSize = 0;
-            _btnCopySheetName.Click += (s, e) => CopySelectedSheetName();
+            _btnToc.FlatAppearance.BorderSize = 0;
+            _btnToc.Click += (s, e) => GenerateTableOfContents();
 
             // 4px Physical Gap 1
-            Panel spacerV2_1 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+            Panel spacerV2_1 = new Panel { Dock = DockStyle.Left, Width = 4, BackColor = Color.Transparent };
 
             // Hide/Show Filter Button (Toggles List View Filtering of Hidden Sheets - Sky Blue #0284C7)
             _btnToggleHidden = new Button
             {
-                Dock = DockStyle.Right,
+                Dock = DockStyle.Left,
                 Width = 78,
                 Text = "Hide/Show",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
@@ -368,28 +368,28 @@ namespace ExcelSheetManager.Views
             _btnToggleHidden.Click += (s, e) => ToggleHiddenSheetsListFilter();
 
             // 4px Physical Gap 2
-            Panel spacerV2_2 = new Panel { Dock = DockStyle.Right, Width = 4, BackColor = Color.Transparent };
+            Panel spacerV2_2 = new Panel { Dock = DockStyle.Left, Width = 4, BackColor = Color.Transparent };
 
-            // Table of Contents Generator Button (Feature 2 - Purple #8B5CF6)
-            _btnToc = new Button
+            // Copy Sheet Name Button (Right of Hide/Show - Emerald Green #16A34A)
+            _btnCopySheetName = new Button
             {
-                Dock = DockStyle.Right,
-                Width = 45,
-                Text = "TOC",
+                Dock = DockStyle.Left,
+                Width = 48,
+                Text = "Copy",
                 Font = new Font("Segoe UI", 8f, FontStyle.Bold),
                 ForeColor = Color.White,
-                BackColor = Color.FromArgb(139, 92, 246), // Purple
+                BackColor = Color.FromArgb(16, 185, 129), // Emerald Green
                 FlatStyle = FlatStyle.Flat,
                 Cursor = Cursors.Hand
             };
-            _btnToc.FlatAppearance.BorderSize = 0;
-            _btnToc.Click += (s, e) => GenerateTableOfContents();
+            _btnCopySheetName.FlatAppearance.BorderSize = 0;
+            _btnCopySheetName.Click += (s, e) => CopySelectedSheetName();
 
-            _pnlVung2Top.Controls.Add(_btnCopySheetName);  // Far Right (Green)
-            _pnlVung2Top.Controls.Add(spacerV2_1);          // Gap
-            _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Middle (Blue)
-            _pnlVung2Top.Controls.Add(spacerV2_2);          // Gap
-            _pnlVung2Top.Controls.Add(_btnToc);            // Left of Hide/Show (Purple)
+            _pnlVung2Top.Controls.Add(_btnToc);           // Far Left (TOC)
+            _pnlVung2Top.Controls.Add(spacerV2_1);         // Gap
+            _pnlVung2Top.Controls.Add(_btnToggleHidden);   // Middle (Hide/Show)
+            _pnlVung2Top.Controls.Add(spacerV2_2);         // Gap
+            _pnlVung2Top.Controls.Add(_btnCopySheetName);  // Right of Hide/Show (Copy)
 
             _txtFilterSheet = new TextBox
             {
